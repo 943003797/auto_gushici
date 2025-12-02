@@ -1,4 +1,7 @@
 import gradio as gr
+import agent as ag
+import os
+from pathlib import Path
 
 def create_ui():
     with gr.Blocks(title="古诗词短视频生成器") as demo:
@@ -23,66 +26,79 @@ def create_ui():
                 confirmed_copy = gr.TextArea(label="文案内容", lines=5, interactive=False)
                 
                 # 背景音频选择
+                # 动态获取 material/bgm 目录下的 MP3 文件
+                bgm_dir = Path("material/bgm")
+                if bgm_dir.exists():
+                    audio_files = ["请选择"] + [f.name for f in bgm_dir.iterdir() if f.suffix.lower() == ".mp3"]
+                else:
+                    audio_files = ["请选择", "未找到音频文件"]
+                
                 bg_audio_dropdown = gr.Dropdown(
-                    choices=["古筝音乐", "笛子音乐", "琵琶音乐", "自然音效"],
+                    choices=audio_files,
                     label="背景音频",
-                    value="古筝音乐"
+                    value="请选择"
                 )
                 audio_player = gr.Audio(label="背景音频试听", type="filepath")
                 
                 # 背景视频选择
+                # 动态获取 material/bgv 目录下的 MP4 文件
+                bgv_dir = Path("material/bgv")
+                if bgv_dir.exists():
+                    video_files = ["请选择"] + [f.name for f in bgv_dir.iterdir() if f.suffix.lower() == ".mp4"]
+                else:
+                    video_files = ["请选择", "未找到视频文件"]
+                
                 bg_video_dropdown = gr.Dropdown(
-                    choices=["山水画风格", "书法展示", "古风动画", "实景拍摄"],
+                    choices=video_files,
                     label="背景视频",
-                    value="山水画风格"
+                    value="请选择"
                 )
                 video_preview = gr.Video(label="背景视频预览")
                 
                 generate_video_btn = gr.Button("生成短视频")
         
+
+
+
+
         # 功能绑定
-        def generate_copy(theme):
-            # 这里应该调用实际的文案生成逻辑
-            sample_copies = {
-                "春天": "春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。",
-                "夏天": "泉眼无声惜细流，树阴照水爱晴柔。小荷才露尖尖角，早有蜻蜓立上头。",
-                "秋天": "远上寒山石径斜，白云深处有人家。停车坐爱枫林晚，霜叶红于二月花。",
-                "冬天": "千山鸟飞绝，万径人踪灭。孤舟蓑笠翁，独钓寒江雪。",
-                "离别": "多情自古伤离别，更那堪冷落清秋节。今宵酒醒何处？杨柳岸晓风残月。",
-                "思念": "红豆生南国，春来发几枝。愿君多采撷，此物最相思。"
-            }
-            return sample_copies.get(theme, f"这里是关于'{theme}'的古诗词文案示例...")
-        
         def confirm_copy(theme, copy_text):
             return theme, copy_text
         
         def update_audio(choice):
-            # 模拟音频文件路径
-            audio_map = {
-                "古筝音乐": "https://example.com/guzheng.mp3",
-                "笛子音乐": "https://example.com/dizi.mp3",
-                "琵琶音乐": "https://example.com/pipa.mp3",
-                "自然音效": "https://example.com/nature.mp3"
-            }
-            return audio_map.get(choice, None)
+            # 如果是"请选择"或错误提示信息，直接返回 None
+            if choice == "请选择" or choice == "未找到音频文件":
+                return None
+            
+            # 构建实际的音频文件路径
+            audio_path = f"material/bgm/{choice}"
+            if os.path.exists(audio_path):
+                return audio_path
+            else:
+                return None
         
         def update_video(choice):
-            # 模拟视频文件路径
-            video_map = {
-                "山水画风格": "https://example.com/shanshui.mp4",
-                "书法展示": "https://example.com/shufa.mp4",
-                "古风动画": "https://example.com/gufeng.mp4",
-                "实景拍摄": "https://example.com/shijing.mp4"
-            }
-            return video_map.get(choice, None)
-        
+            # 如果是"请选择"或错误提示信息，直接返回 None
+            if choice == "请选择" or choice == "未找到视频文件":
+                return None
+            
+            # 构建实际的视频文件路径
+            video_path = f"material/bgv/{choice}"
+            if os.path.exists(video_path):
+                return video_path
+            else:
+                return None
+
+
+
+
+                
         # 绑定事件
         generate_copy_btn.click(
-            fn=generate_copy,
+            fn=ag.general_base_data,
             inputs=theme_input,
             outputs=copy_content
         )
-        
         confirm_copy_btn.click(
             fn=confirm_copy,
             inputs=[theme_input, copy_content],
