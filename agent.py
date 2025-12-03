@@ -59,10 +59,16 @@ async def general_base_data(title: str = "") -> str:
         output_content_type_format="json_object",
         memory=None
     )
-    
     # 直接运行agent进行单次对话
     result = await agent.run(task=title)
-    print(result.messages[-1].content)
+    # 将结果转换为JSON字符串格式输出
+    import json
+    content = result.messages[-1].content
+    if isinstance(content, str):
+        print(content)
+    else:
+        # 如果是对象，转换为JSON字符串
+        return json.dumps(content.model_dump(), ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     asyncio.run(general_base_data("千古词帝李煜的巅峰之作"))
