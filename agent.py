@@ -25,12 +25,12 @@ class poetryList(BaseModel):
     poetryList: list[PoetryItem] = Field(description="诗词列表")
 
 # Define the agent
-async def general_base_data(title: str = "") -> str:
+async def general_poetry(title: str = "") -> list:
     agent = AssistantAgent(
         name="single_turn_agent",
         model_client=gpt_5_mini,
         system_message="""
-        基于用户提供的主题，找至少10首最符合主题的诗词，摘选每首精华部分（一般为上下整句）。
+        基于用户提供的主题，找至少2首最符合主题的诗词，摘选每首精华部分（一般为上下整句）。
         严格按照以下JSON格式返回结果，不要包含任何额外信息：
         {
             [
@@ -68,9 +68,10 @@ async def general_base_data(title: str = "") -> str:
     
     # Python origin object to JSON
     json_content = json.dumps(content.model_dump(), ensure_ascii=False, indent=2)
+
     print(json_content)
-    return json_content
+    return json.loads(json_content)["poetryList"]
 
 # Test
 if __name__ == "__main__":
-    asyncio.run(general_base_data("千古词帝李煜的巅峰之作"))
+    asyncio.run(general_poetry("千古词帝李煜的巅峰之作"))
