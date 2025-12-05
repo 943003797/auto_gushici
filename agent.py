@@ -57,8 +57,16 @@ async def general_base_data(title: str = "") -> str:
     )
     # Run agent once chat
     result = await agent.run(task=title)
+    
+    # 获取最后一条消息的内容
+    if not result.messages:
+        raise ValueError("Agent returned no messages")
+    last_message = result.messages[-1]
+    content = getattr(last_message, 'content', None)
+    if content is None:
+        raise ValueError("Last message has no content")
+    
     # Python origin object to JSON
-    content = result.messages[-1].content
     json_content = json.dumps(content.model_dump(), ensure_ascii=False, indent=2)
     print(json_content)
     return json_content
