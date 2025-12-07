@@ -1,7 +1,9 @@
-import os, asyncio, json
+import os, asyncio, json, dashscope
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from pydantic import BaseModel, Field
+from dashscope.audio.tts_v2 import VoiceEnrollmentService, SpeechSynthesizer
+from dashscope.audio.tts_v2.speech_synthesizer import json
 from dotenv import load_dotenv
 
 # Init env
@@ -71,6 +73,33 @@ async def general_poetry(title: str = "") -> list:
 
     print(json_content)
     return json.loads(json_content)["poetryList"]
+
+# Generate audio from text
+def generate_audio(text: str = "", out_path: str = "") -> bool:
+        dashscope.api_key = os.getenv("ALI_KEY")
+        target_model = "cosyvoice-v1"
+        voice_id = "cosyvoice-prefix-4eec46a3b5d8499a8c29c46766452a63"
+        synthesizer = SpeechSynthesizer(model=target_model, voice=voice_id)
+        audio_result = synthesizer.call(str(text))
+        try:
+            with open(out_path, "wb") as f:
+                if audio_result is not None:
+                    f.write(audio_result)
+                else:
+                    raise Exception("Geneal audio faild")
+            return True
+        except Exception as e:
+            return False
+# Generate audio from poetry
+async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
+    print(poetry)
+    if not out_dir:
+        out_dir = os.getenv("DRAFT_DIR") or ""
+    generate_audio(text=title, out_path=f"{out_dir}/title.mp3")
+    for item in json.loads(poetry):
+        shiju = item["shiju"]
+        generate_audio(text=shiju, out_path=f"{out_dir}/{item['id']}.mp3")
+    return True
 
 # Test
 if __name__ == "__main__":

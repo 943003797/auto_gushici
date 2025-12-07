@@ -259,6 +259,7 @@ dependencies = [
     { name = "agentscope" },
     { name = "autogen-agentchat" },
     { name = "autogen-ext", extra = ["azure", "openai"] },
+    { name = "dashscope" },
     { name = "gradio" },
     { name = "python-dotenv" },
 ]
@@ -268,6 +269,7 @@ requires-dist = [
     { name = "agentscope", specifier = ">=1.0.8" },
     { name = "autogen-agentchat", specifier = ">=0.7.5" },
     { name = "autogen-ext", extras = ["azure", "openai"], specifier = ">=0.7.5" },
+    { name = "dashscope", specifier = ">=1.25.2" },
     { name = "gradio", specifier = ">=6.0.1" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
 ]

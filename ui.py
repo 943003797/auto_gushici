@@ -26,7 +26,9 @@ def create_ui():
             # Right box
             with gr.Column(scale=1):
                 gr.Markdown("## 视频生成")
-
+                
+                generate_tts_btn = gr.Button("配音")
+                regenerate_tts_btn = gr.Button("重新生成选中配音")
                 # TTS 试听
                 tts_dir = Path("material/bgm")
                 if tts_dir.exists():
@@ -35,9 +37,22 @@ def create_ui():
                     tts_files = ["请选择", "未找到音频文件"]
                 tts_dropdown = gr.Dropdown(
                     choices=tts_files,
-                    label="TTS音频",
+                    label="TTS音频预览",
                     value="请选择"
                 )
+                def generate_tts(title, poetry):
+                    print(title, poetry)
+                    tts_file = asyncio.run(ag.generate_tts(title, poetry))
+                    if tts_file:
+                        return []
+                    else:
+                        return []
+                generate_tts_btn.click(
+                    fn=generate_tts,
+                    inputs=[title_input, confirm_poetry],
+                    outputs=[tts_dropdown]
+                )
+
                 tts_player = gr.Audio(label="TTS试听", type="filepath")
                 def update_tts_audio(choice):
                     # 如果是"请选择"或错误提示信息，直接返回 None
