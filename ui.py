@@ -1,9 +1,11 @@
 import gradio as gr
 from tomlkit import value
 import agent as ag
+import auto_cut as act
 import os, json
 import asyncio
 from pathlib import Path
+from auto_cut import autoCut
 
 def create_ui():
     with gr.Blocks(title="古诗词短视频生成器") as demo:
@@ -44,7 +46,13 @@ def create_ui():
                     print(title, poetry)
                     tts_file = asyncio.run(ag.generate_tts(title, poetry))
                     if tts_file:
-                        return []
+                        # 重新加载 tts_dropdown，读取 draft 目录下的音频文件
+                        draft_dir = Path("draft")
+                        if draft_dir.exists():
+                            draft_files = ["请选择"] + [f.name for f in draft_dir.iterdir() if f.suffix.lower() == ".mp3"]
+                        else:
+                            draft_files = ["请选择", "未找到音频文件"]
+                        return gr.update(choices=draft_files, value="请选择")
                     else:
                         return []
                 generate_tts_btn.click(
@@ -59,7 +67,8 @@ def create_ui():
                     if choice == "请选择" or choice == "未找到音频文件":
                         return None
                     # 构建实际的音频文件路径
-                    audio_path = f"material/bgm/{choice}"
+                    tts_path = os.getenv("DRAFT_DIR") or ""
+                    audio_path = f"{tts_path}/{choice}"
                     if os.path.exists(audio_path):
                         return audio_path
                     else:
@@ -164,6 +173,13 @@ def create_ui():
             for p in poetry_list:
                     merged.append(p)
             return gr.update(choices=merged)
+        
+        def generateDraft():
+            act = autoCut()
+            return act.general_draft()
+        gr.Button("Go").click(
+            fn=generateDraft
+        )
 
         
     return demo

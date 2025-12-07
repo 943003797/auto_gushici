@@ -10,5 +10,6 @@ dependencies = [
     "autogen-ext[azure,openai]>=0.7.5",
     "dashscope>=1.25.2",
     "gradio>=6.0.1",
+    "pyjianyingdraft>=0.2.5",
     "python-dotenv>=1.0.1",
 ]
