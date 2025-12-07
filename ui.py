@@ -23,7 +23,7 @@ def create_ui():
 
                 # Confirm poetry button
                 confirm_copy_btn = gr.Button("确认文案")
-                confirm_poetry = gr.Textbox(label="Confirm poetry", lines=20, type="text", value="")
+                confirm_poetry = gr.Textbox(label="Confirm poetry", lines=20)
 
             # Right box
             with gr.Column(scale=1):
@@ -142,7 +142,7 @@ def create_ui():
             new_choices = asyncio.run(ag.general_poetry(title))
             checkList = []
             for potry in new_choices:
-                tmp: tuple = (potry["shiju"], potry["id"])
+                tmp: tuple = (f"{potry['shangju']}{potry['xiaju']}", potry["id"])
                 checkList.append(tmp)
             return gr.update(value=json.dumps(new_choices, ensure_ascii=False, indent=4))
         generate_poetry_btn.click(
@@ -174,11 +174,12 @@ def create_ui():
                     merged.append(p)
             return gr.update(choices=merged)
         
-        def generateDraft():
-            act = autoCut()
+        def generateDraft(title: str, confirm_poetry: str, bgm: str, bgv: str):
+            act = autoCut(title=title, list=json.loads(confirm_poetry), bgm=bgm, bgv=bgv)
             return act.general_draft()
         gr.Button("Go").click(
-            fn=generateDraft
+            fn=generateDraft,
+            inputs=[title_input, confirm_poetry, bg_audio_dropdown, bg_video_dropdown]
         )
 
         

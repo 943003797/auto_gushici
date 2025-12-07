@@ -20,7 +20,8 @@ gpt_5_mini = OpenAIChatCompletionClient(
 class poetryList(BaseModel):
     class PoetryItem(BaseModel):
         id: str = Field(description="自增id")
-        shiju: str = Field(description="诗句")
+        shangju: str = Field(description="上句")
+        xiaju: str = Field(description="下句")
         shiming: str = Field(description="诗名")
         zuozhe: str = Field(description="作者")
         yiwen: str = Field(description="译文")
@@ -32,20 +33,22 @@ async def general_poetry(title: str = "") -> list:
         name="single_turn_agent",
         model_client=gpt_5_mini,
         system_message="""
-        基于用户提供的主题，找至少2首最符合主题的诗词，摘选每首精华部分（一般为上下整句）。
+        基于用户提供的主题，找到6首最符合主题的诗词，摘选每首精华部分（一般为上下整句）。
         严格按照以下JSON格式返回结果，不要包含任何额外信息：
         {
             [
                 {
                     "id": "1",
-                    "shiju": "问君能有几多愁，恰似一江春水向东流。",
+                    "shangju": "问君能有几多愁",
+                    "xiaju": "恰似一江春水向东流",
                     "shiming": "虞美人",
                     "zuozhe": "李煜",
                     "yiwen": "请问你有多少愁苦？正像那滔滔江水向东流去一样。"
                 },
                 {
                     "id": "2",
-                    "shiju": "国破山河在，城春草木深。",
+                    "shangju": "国破山河在",
+                    "xiaju": "城春草木深",
                     "shiming": "春望",
                     "zuozhe": "杜甫",
                     "yiwen": "国家沦陷只有山河依旧，春日的城区却荒芜残破。"
@@ -97,8 +100,10 @@ async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
         out_dir = os.getenv("DRAFT_DIR") or ""
     generate_audio(text=title, out_path=f"{out_dir}/title.mp3")
     for item in json.loads(poetry):
-        shiju = item["shiju"]
-        generate_audio(text=shiju, out_path=f"{out_dir}/{item['id']}.mp3")
+        shangju = item["shangju"]
+        xiaju = item["xiaju"]
+        generate_audio(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
+        generate_audio(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3")
     return True
 
 # Test
