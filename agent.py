@@ -1,4 +1,4 @@
-import os, asyncio, json, dashscope
+import os, asyncio, json, dashscope, random
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from pydantic import BaseModel, Field
@@ -20,8 +20,8 @@ gpt_5_mini = OpenAIChatCompletionClient(
 class poetryList(BaseModel):
     class PoetryItem(BaseModel):
         id: str = Field(description="自增id")
-        shangju: str = Field(description="上句")
-        xiaju: str = Field(description="下句")
+        shangju: str = Field(description="包含SSML标签的上句")
+        xiaju: str = Field(description="包含SSML标签的下句")
         shiming: str = Field(description="诗名")
         zuozhe: str = Field(description="作者")
         yiwen: str = Field(description="译文")
@@ -78,7 +78,7 @@ async def general_poetry(title: str = "") -> list:
     return json.loads(json_content)["poetryList"]
 
 # Generate audio from text
-def generate_audio(text: str = "", out_path: str = "") -> bool:
+def generate_audio_cosyvoiceV1(text: str = "", out_path: str = "") -> bool:
         dashscope.api_key = os.getenv("ALI_KEY")
         target_model = "cosyvoice-v1"
         voice_id = "cosyvoice-prefix-4eec46a3b5d8499a8c29c46766452a63"
@@ -94,17 +94,38 @@ def generate_audio(text: str = "", out_path: str = "") -> bool:
         except Exception as e:
             return False
 # Generate audio from poetry
+def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
+    dashscope.api_key = os.getenv("ALI_KEY")
+    synthesizer = SpeechSynthesizer(
+        model = "cosyvoice-v3-plus",
+        voice = "cosyvoice-v3-plus-bailian-d52a1ddb0cbe4c79bf917fed46bda195",
+        speech_rate = 0.95,
+        additional_params={"bit_rate": 64},
+        seed = random.randint(0, 65535),
+        language_hints = "zh"
+    )
+    audio_result = synthesizer.call(text)
+    try:
+        with open(out_path, "wb") as f:
+            if audio_result is not None:
+                f.write(audio_result)
+            else:
+                raise Exception("General audio failed")
+        return True
+    except Exception as e:
+        return False
+
 async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
     print(poetry)
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
     print(f"{out_dir}/title.mp3")
-    generate_audio(text=title, out_path=f"{out_dir}/title.mp3")
+    generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     for item in json.loads(poetry):
         shangju = item["shangju"]
         xiaju = item["xiaju"]
-        generate_audio(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
-        generate_audio(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3")
+        generate_audio_cosyvoiceV3(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
+        generate_audio_cosyvoiceV3(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3")
     return True
 
 # Test
