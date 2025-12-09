@@ -2,7 +2,7 @@ import gradio as gr
 from tomlkit import value
 import agent as ag
 import auto_cut as act
-import os, json
+import os, json, shutil
 import asyncio
 from pathlib import Path
 from auto_cut import autoCut
@@ -44,12 +44,14 @@ def create_ui():
                 )
                 def generate_tts(title, poetry):
                     print(title, poetry)
-                    tts_file = asyncio.run(ag.generate_tts(title, poetry))
+                    draft_dir = os.getenv("DRAFT_DIR") or ""
+                    copy_dir("baseDraft", draft_dir + title)
+                    audio_dir = Path(draft_dir + title + "/Resources/audioAlg/")
+                    tts_file = asyncio.run(ag.generate_tts(title, poetry, audio_dir))
                     if tts_file:
                         # 重新加载 tts_dropdown，读取 draft 目录下的音频文件
-                        draft_dir = Path("draft")
-                        if draft_dir.exists():
-                            draft_files = ["请选择"] + [f.name for f in draft_dir.iterdir() if f.suffix.lower() == ".mp3"]
+                        if audio_dir.exists():
+                            draft_files = ["请选择"] + [f.name for f in audio_dir.iterdir() if f.suffix.lower() == ".mp3"]
                         else:
                             draft_files = ["请选择", "未找到音频文件"]
                         return gr.update(choices=draft_files, value="请选择")
@@ -62,20 +64,21 @@ def create_ui():
                 )
 
                 tts_player = gr.Audio(label="TTS试听", type="filepath")
-                def update_tts_audio(choice):
+                def update_tts_audio(choice, title):
                     # 如果是"请选择"或错误提示信息，直接返回 None
                     if choice == "请选择" or choice == "未找到音频文件":
                         return None
                     # 构建实际的音频文件路径
                     tts_path = os.getenv("DRAFT_DIR") or ""
-                    audio_path = f"{tts_path}/{choice}"
+                    audio_path = f"{tts_path}/{title}/Resources/audioAlg/{choice}"
+                    print(audio_path)
                     if os.path.exists(audio_path):
                         return audio_path
                     else:
                         return None
                 tts_dropdown.change(
                     fn=update_tts_audio,
-                    inputs=tts_dropdown,
+                    inputs=[tts_dropdown, title_input],
                     outputs=tts_player
                 )
 
@@ -182,9 +185,28 @@ def create_ui():
             inputs=[title_input, confirm_poetry, bg_audio_dropdown, bg_video_dropdown]
         )
 
-        
     return demo
 
+def copy_dir(from_path: str, to_path: str) -> str:
+        if not os.path.isdir(from_path):
+            raise FileNotFoundError(f'源目录不存在: {from_path}')
+        # 创建目标目录
+        os.makedirs(to_path, exist_ok=True)
+        # 复制所有文件（包含子目录）
+        for root, _, files in os.walk(from_path):
+            # 计算目标路径
+            relative_path = os.path.relpath(root, from_path)
+            target_dir = os.path.join(to_path, relative_path)
+            
+            # 创建目标子目录
+            os.makedirs(target_dir, exist_ok=True)
+            
+            # 复制当前目录下的所有文件
+            for file in files:
+                src_file = os.path.join(root, file)
+                dst_file = os.path.join(target_dir, file)
+                shutil.copy2(src_file, dst_file)
+        return "success"
 if __name__ == "__main__":
     ui = create_ui()
     ui.launch(server_name="0.0.0.0", server_port=9001)

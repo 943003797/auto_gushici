@@ -18,7 +18,8 @@ class autoCut():
         self.title = title
         self.list = list
         self.DUMP_PATH = os.getenv("DUMP_PATH")
-        self.output_dir = os.getenv("DRAFT_DIR")
+        self.output_dir = os.getenv("DRAFT_DIR") + self.title
+        self.tts_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/audioAlg/"
         self.bgm_dir = "material/bgm/"
         self.bgv_dir = "material/bgv/"
         self.script = draft.ScriptFile(1920, 1080)
@@ -46,7 +47,7 @@ class autoCut():
         audio_bgm_segment.add_fade("1s", "1s")
         self.script.add_segment(audio_bgm_segment, 'BGM')
         # 水印
-        TextSegment = draft.TextSegment("时间在走、", trange(0, self.nowS),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+        TextSegment = draft.TextSegment("和光同尘、", trange(0, self.nowS),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
                                     font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
                                     style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
                                     border=draft.TextBorder(alpha=0.2,color=(0, 0, 0)),
@@ -64,7 +65,7 @@ class autoCut():
         self.script.add_segment(video_segment, 'BGVC')
         
     def addTitle(self):
-        AudioMaterial = draft.AudioMaterial(os.path.join(self.output_dir, 'title.mp3'))
+        AudioMaterial = draft.AudioMaterial(os.path.join(self.tts_dir, 'title.mp3'))
         audio_duration = AudioMaterial.duration
         self.script.add_material(AudioMaterial)
         AudioSegment = draft.AudioSegment(AudioMaterial,
@@ -110,8 +111,8 @@ class autoCut():
             itemPeiyinNow = self.nowS
             audio_duration = 0
             for i in range(10):
-                if os.path.exists(os.path.join(self.output_dir, f"{item['id']}_{i}.mp3")):
-                    AudioMaterial = draft.AudioMaterial(os.path.join(self.output_dir, f"{item['id']}_{i}.mp3"))
+                if os.path.exists(os.path.join(self.tts_dir, f"{item['id']}_{i}.mp3")):
+                    AudioMaterial = draft.AudioMaterial(os.path.join(self.tts_dir, f"{item['id']}_{i}.mp3"))
                     audio_length = AudioMaterial.duration
                     
                     self.script.add_material(AudioMaterial)
@@ -124,7 +125,7 @@ class autoCut():
             
             # 背景素材,分段定制
             
-            # video_material = draft.VideoMaterial(os.path.join(self.output_dir, "bgloop.mp4"))
+            # video_material = draft.VideoMaterial(os.path.join(self.bgv_dir, "bgloop.mp4"))
             # video_duration = video_material.duration
             # self.script.add_material(video_material)
             # video_segment = draft.VideoSegment(material = video_material,
@@ -227,7 +228,7 @@ class autoCut():
         return 'Success'
     
     def addVideo(self, filename: str):
-        video_material = draft.VideoMaterial(os.path.join(self.output_dir, filename))
+        video_material = draft.VideoMaterial(os.path.join(self.bgv_dir, filename))
         video_duration = video_material.duration
         self.script.add_material(video_material)
         video_segment = draft.VideoSegment(video_material,
@@ -236,7 +237,7 @@ class autoCut():
         self.script.add_segment(video_segment, 'BGV')
 
     def dumpDraft(self):
-        self.script.dump(self.DUMP_PATH + '/draft_content.json')
+        self.script.dump(self.output_dir + '/draft_content.json')
     
     def general_draft(self, title: str = ""):
         try:
