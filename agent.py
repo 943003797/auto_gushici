@@ -34,7 +34,7 @@ async def general_poetry(title: str = "") -> list:
         model_client=gpt_5_mini,
         system_message="""
         基于用户提供的主题，找到6首最符合主题的诗词，摘选每首精华部分（一般为上下整句）。
-        严格按照以下JSON格式返回结果，不要包含任何额外信息：
+        严格按照以下JSON格式返回结果，不要包含任何额外信息，yiwen不要太长，保持30字左右：
         {
             [
                 {
