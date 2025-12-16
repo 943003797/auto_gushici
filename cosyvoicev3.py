@@ -11,8 +11,8 @@ def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
     dashscope.api_key = os.getenv("ALI_KEY")
     synthesizer = SpeechSynthesizer(
         model = "cosyvoice-v3-plus",
-        voice = "cosyvoice-v3-plus-bailian-d52a1ddb0cbe4c79bf917fed46bda195",
-        speech_rate = 0.95,
+        voice = "cosyvoice-v3-plus-bailian-186316e2ef3e4cb09665af98872db566",
+        speech_rate = 1.1,
         additional_params={"bit_rate": 64},
         seed = random.randint(0, 65535),
         language_hints = "zh"
