@@ -12,7 +12,7 @@ def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
     synthesizer = SpeechSynthesizer(
         model = "cosyvoice-v3-plus",
         voice = "cosyvoice-v3-plus-bailian-186316e2ef3e4cb09665af98872db566",
-        speech_rate = 1.1,
+        speech_rate = 1.5,
         additional_params={"bit_rate": 64},
         seed = random.randint(0, 65535),
         language_hints = "zh"

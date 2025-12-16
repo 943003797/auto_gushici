@@ -5,7 +5,7 @@ import auto_cut as act
 import os, json, shutil
 import asyncio
 from pathlib import Path
-from auto_cut import autoCut
+from auto_cut_v2 import autoCut
 
 def create_ui():
     with gr.Blocks(title="古诗词短视频生成器") as demo:

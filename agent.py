@@ -120,7 +120,7 @@ async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
     print(f"{out_dir}/title.mp3")
-    generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
+    # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     for item in json.loads(poetry):
         shangju = item["shangju"]
         xiaju = item["xiaju"]
