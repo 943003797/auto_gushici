@@ -1,4 +1,4 @@
-import os, asyncio, json, dashscope, random
+import os, asyncio, json, dashscope, random, base64, requests, time
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from pydantic import BaseModel, Field
@@ -115,6 +115,27 @@ def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
     except Exception as e:
         return False
 
+def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
+    payload = {
+        "model": "IndexTeam/IndexTTS-2",
+        "input": text,
+        "max_tokens": 2048,
+        "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open("material/reference_audio/风吟.wav", "rb").read()).decode()}],
+        "response_format": "mp3",
+        "sample_rate": 32000,
+        "stream": True,
+        "speed": 1,
+        "gain": 0
+    }
+    headers = {"Authorization": "Bearer sk-kvexcgafqqjhfuhnwayfrtmcyuolmoaazrqelenmhkgaaazg","Content-Type": "application/json"}
+    response = requests.post("https://api.siliconflow.cn/v1/audio/speech", json=payload, headers=headers)
+    try:
+        with open(out_path, "wb") as f: 
+            f.write(response.content)
+        return True
+    except Exception as e:
+        return False
+
 async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
     print(poetry)
     if not out_dir:
@@ -122,10 +143,11 @@ async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
     print(f"{out_dir}/title.mp3")
     # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     for item in json.loads(poetry):
+        time.sleep(1)
         shangju = item["shangju"]
         xiaju = item["xiaju"]
-        generate_audio_cosyvoiceV3(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
-        generate_audio_cosyvoiceV3(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3")
+        generate_audio_indextts2(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
+        generate_audio_indextts2(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3")
     return True
 
 # Test

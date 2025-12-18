@@ -45,7 +45,7 @@ class autoCut():
         audio_bgm = draft.AudioMaterial(os.path.join(self.bgm_dir, self.bgm))
         audio_bgm_lenth = audio_bgm.duration
         self.script.add_material(audio_bgm)
-        audio_bgm_segment = draft.AudioSegment(audio_bgm, trange(0, self.nowS),volume=0.2)
+        audio_bgm_segment = draft.AudioSegment(audio_bgm, trange(0, self.nowS),volume=0.4)
         audio_bgm_segment.add_fade("0.2s", "1s")
         self.script.add_segment(audio_bgm_segment, 'BGM')
         # 水印
@@ -65,7 +65,17 @@ class autoCut():
                                                         target_timerange  = trange(0, int(self.nowS) + 500000),
                                                         volume=0)
         self.script.add_segment(video_segment, 'BGVC')
-        
+    
+    def addSubTitle(self, title: str):
+        TextSegment = draft.TextSegment(title, trange(0, self.nowS),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+                                    font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                    style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
+                                    border=draft.TextBorder(alpha=0.2,color=(0, 0, 0)),
+                                    clip_settings=draft.ClipSettings(transform_x=-0.85,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+        TextSegment.add_animation(TextIntro.冰雪飘动, 1500000)
+        TextSegment.add_animation(TextOutro.渐隐, 500000)
+        self.script.add_segment(TextSegment, 'SY')
+
     def addTitle(self):
         # AudioMaterial = draft.AudioMaterial(os.path.join(self.tts_dir, 'title.mp3'))
         # audio_duration = AudioMaterial.duration
@@ -97,7 +107,7 @@ class autoCut():
                     TextSegment = draft.TextSegment(list[key][0], trange(0 + key * 500000, duration),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
                                   font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
                                   style=draft.TextStyle(color= TextColor),                # 设置字体颜色为黄色
-                                  clip_settings=draft.ClipSettings(transform_y=0.4 - key * 0.28))          # 模拟字幕的位置
+                                  clip_settings=draft.ClipSettings(transform_y=0.4 - key * 0.3))          # 模拟字幕的位置
                     TextSegment.add_animation(TextIntro.星光闪闪, 500000)
                     TextSegment.add_animation(TextOutro.渐隐, 300000)
                     self.script.add_segment(TextSegment, 'T' + str(key))
@@ -105,7 +115,7 @@ class autoCut():
         #二级标题
         TextSegment = draft.TextSegment("绝美 · 诗词", trange(self.nowS, 1500000),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
                         font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
-                        style=draft.TextStyle(color= (1, 0.27450980392156865, 0.12549019607843137)),                # 设置字体颜色为黄色
+                        style=draft.TextStyle(color= (1, 0.27450980392156865, 0.12549019607843137), size=15),                # 设置字体颜色为黄色
                         clip_settings=draft.ClipSettings(transform_y=0))          # 模拟字幕的位置
         TextSegment.add_animation(TextIntro.电光, 800000)
         TextSegment.add_animation(TextOutro.渐隐, 300000)
@@ -115,7 +125,7 @@ class autoCut():
         self.script.add_material(AudioMaterial)
         AudioSegment = draft.AudioSegment(AudioMaterial,
                                     trange(self.nowS, 1000000),
-                                    volume=0.15)
+                                    volume=0.10)
         self.script.add_segment(AudioSegment, 'SFX')
 
         self.nowS = self.nowS + 1500000
@@ -143,7 +153,7 @@ class autoCut():
                     self.script.add_material(AudioMaterial)
                     AudioSegment = draft.AudioSegment(AudioMaterial,
                                     trange(int(itemPeiyinNow), int(audio_length)),
-                                    volume=1.2)
+                                    volume=1.5)
                     self.script.add_segment(AudioSegment, 'TTS')
                     itemPeiyinNow += audio_length
                     audio_duration+=audio_length
@@ -159,15 +169,16 @@ class autoCut():
             #                                             volume=0)
             # self.script.add_segment(video_segment, 'BGV')
 
-            StickerSegment = draft.StickerSegment(
-                resource_id = "7226264888031694091",
-                target_timerange = trange(int(self.nowS), int(audio_duration) + 500000),
-                clip_settings = draft.ClipSettings(
-                    scale_x = 2,
-                    scale_y = 0.25
-                )
-            )
-            self.script.add_segment(StickerSegment, 'STK')
+            # 蒙版贴纸
+            # StickerSegment = draft.StickerSegment(
+            #     resource_id = "7226264888031694091",
+            #     target_timerange = trange(int(self.nowS), int(audio_duration) + 500000),
+            #     clip_settings = draft.ClipSettings(
+            #         scale_x = 2,
+            #         scale_y = 0.25
+            #     )
+            # )
+            # self.script.add_segment(StickerSegment, 'STK')
             # 字幕素材
             # title = item['shiju']
             title = '123|456'
@@ -283,55 +294,62 @@ class autoCut():
 
 if __name__ == "__main__":
     list = [
-  {
+{
     "id": "1",
-    "shangju": "我是人间惆怅客",
-    "xiaju": "知君何事泪纵横",
-    "shiming": "浣溪沙·残雪凝辉冷画屏",
-    "zuozhe": "纳兰性德",
-    "yiwen": "我是这人世间失意的过客，懂得你为何泪水纵横。"
-  },
-  {
-    "id": "2",
-    "shangju": "心酸纵有千百种",
-    "xiaju": "沉默不语最难过",
-    "shiming": "无题（现代诗句）",
-    "zuozhe": "佚名（当代流传）",
-    "yiwen": "心中苦楚千千万，最痛却是默默无言。"
-  },
-  {
-    "id": "3",
-    "shangju": "泪眼问花花不语",
-    "xiaju": "乱红飞过秋千去",
-    "shiming": "蝶恋花·庭院深深深几许",
-    "zuozhe": "欧阳修",
-    "yiwen": "含泪问花，花却沉默不语，只见纷乱落花随风飞过秋千。"
-  },
-  {
-    "id": "4",
-    "shangju": "向来心是看客心",
-    "xiaju": "奈何人是剧中人",
-    "shiming": "无题（当代仿古诗句）",
-    "zuozhe": "佚名（当代流传）",
-    "yiwen": "本想以旁观者的心境看待世事，无奈自己却深陷其中。"
-  },
- {
-  "id": "5",
-  "shangju": "人到洛阳花似锦",
-  "xiaju": "偏我来时不逢春",
-  "shiming": "双烈记",
-  "zuozhe": "张四维",
-  "yiwen": "别人到洛阳时繁花似锦，偏偏我来时却不是春天。"
+    "shangju": "雄关漫道真如铁",
+    "xiaju": "而今迈步从头越",
+    "shiming": "忆秦娥·娄山关",
+    "zuozhe": "毛泽东",
+    "yiwen": "雄伟的关隘纵然坚如钢铁，如今我们昂首阔步，重新跨越。"
 },
-  {
-    "id": "6",
-    "shangju": "不如意事常八九",
-    "xiaju": "可与语人无二三",
-    "shiming": "别子才司令",
-    "zuozhe": "方岳",
-    "yiwen": "人生不如意的事十有八九，能与人诉说的却寥寥无几。"
-  }
+{
+"id": "2",
+"shangju": "大鹏一日同风起",
+"xiaju": "扶摇直上九万里",
+"shiming": "上李邕",
+"zuozhe": "李白",
+"yiwen": "大鹏乘风而起，直冲九万里高空。"
+},{
+    "id": "3",
+    "shangju": "即今江海一归客",
+    "xiaju": "他日云霄万里人",
+    "shiming": "送裴处士应制举诗",
+    "zuozhe": "刘禹锡",
+    "yiwen": "如今只是江湖归隐之人，来日定是翱翔云霄的万里英才。"
+},
+{
+"id": "4",
+"shangju": "追风赶月莫停留",
+"xiaju": "平芜尽处是春山",
+"shiming": "励志句",
+"zuozhe": "佚名",
+"yiwen": "一路疾行莫停歇，平坦荒野尽头便是春意盎然的青山。"
+},
+{
+"id": "5",
+"shangju": "苦尽甘来终有时",
+"xiaju": "一路向阳待花期",
+"shiming": "励志句",
+"zuozhe": "佚名",
+"yiwen": "苦难终会过去，甘甜必将到来；只要心向阳光，静待花开时节。"
+},
+{
+"id": "6",
+"shangju": "关关难过关关过",
+"xiaju": "前路漫漫亦灿灿",
+"shiming": "励志句",
+"zuozhe": "佚名",
+"yiwen": "每一关都难，但都能闯过；前路虽远，却光明灿烂。"
+},
+{
+    "id": "7",
+    "shangju": "万里腾飞仍有路",
+    "xiaju": "莫愁四海正风尘",
+    "shiming": "舟中忆邵景说寄张子退",
+    "zuozhe": "夏完淳",
+    "yiwen": "纵有万里征程，前路依然可通；不必忧愁天下纷扰，风尘终将落定。"
+}
 ]
     # poetry_draft = autoCut(title="千古词帝李煜的巅峰之作", list=list, bgm='BGM_爱的供养_间奏.mp3', bgv='水墨山河.mp4')
-    poetry_draft = autoCut(title="华夏民族那些，如雷贯耳，让人茅塞顿开，顶级哲思", list=list, bgm='wake.mp3', bgv='水墨山河.mp4')
+    poetry_draft = autoCut(title="古人笔下，那些，砥砺前行的，励志诗句", list=list, bgm='wake.mp3', bgv='金粉向右飘.mp4')
     poetry_draft.general_draft()
