@@ -127,7 +127,7 @@ def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
         "speed": 1,
         "gain": 0
     }
-    headers = {"Authorization": "Bearer sk-kvexcgafqqjhfuhnwayfrtmcyuolmoaazrqelenmhkgaaazg","Content-Type": "application/json"}
+    headers = {"Authorization": "Bearer sk-gkvexcgafqqjhfuhnwayfrtmcyuolmoaazrqelenmhkgaaazg","Content-Type": "application/json"}
     response = requests.post("https://api.siliconflow.cn/v1/audio/speech", json=payload, headers=headers)
     try:
         with open(out_path, "wb") as f: 
