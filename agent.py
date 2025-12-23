@@ -143,7 +143,7 @@ async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
     print(f"{out_dir}/title.mp3")
     # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     for item in json.loads(poetry):
-        time.sleep(1)
+        time.sleep(2)
         shangju = item["shangju"]
         xiaju = item["xiaju"]
         generate_audio_indextts2(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
