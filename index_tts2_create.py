@@ -4,7 +4,7 @@ payload = {
     "model": "IndexTeam/IndexTTS-2",
     "input": "大鹏一日同风起",
     "max_tokens": 2048,
-    "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open("1.wav", "rb").read()).decode()}],
+    "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open("2.mp3", "rb").read()).decode()}],
     "response_format": "mp3",
     "sample_rate": 32000,
     "stream": True,
