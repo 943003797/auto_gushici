@@ -1,11 +1,11 @@
 import gradio as gr
 from tomlkit import value
-import agent_v3 as ag
-import auto_cut as act
+from agent import agent_v3 as ag
+from autocut import auto_cut_v3 as act
 import os, json, shutil
 import asyncio
 from pathlib import Path
-from auto_cut_v3 import autoCut
+from autocut.auto_cut_v3 import autoCut
 
 def create_ui():
     with gr.Blocks(title="语录开头古诗词短视频 V3") as demo:
@@ -44,7 +44,7 @@ def create_ui():
                 )
                 def generate_tts(title, wenan, poetry):
                     draft_dir = os.getenv("DRAFT_DIR") or ""
-                    copy_dir("baseDraft", draft_dir + title)
+                    copy_dir("material/baseDraft", draft_dir + title)
                     audio_dir = Path(draft_dir + title + "/Resources/audioAlg/")
                     tts_file = asyncio.run(ag.generate_tts(title, wenan, poetry, audio_dir))
                     if tts_file:

@@ -4,7 +4,6 @@ from pyJianYingDraft import Intro_type, Transition_type, trange
 from pyJianYingDraft import TextIntro, TextOutro, Text_loop_anim, Mask_type
 from pyJianYingDraft import animation
 from pyJianYingDraft.script_file import json
-from pyJianYingDraft.jianying_controller import ExportResolution, ExportFramerate
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -239,7 +238,6 @@ class autoCut():
             self.script.dump(self.output_dir + '/draft_content.json')
             # # 导出
             # ctrl = draft.JianyingController()
-            # ctrl.export_draft("千古词帝李煜的巅峰之作", "C:/Users/Kinso/Desktop/tmp", resolution=ExportResolution.RES_1080P, framerate=ExportFramerate.FR_24)
             # 导出
         except Exception as e:
             print(f"生成草稿时发生错误: {str(e)}")

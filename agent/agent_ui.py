@@ -1,5 +1,5 @@
 import gradio as gr
-import agent as ag
+from agent import agent as ag
 import os
 from pathlib import Path
 
