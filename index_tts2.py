@@ -9,7 +9,7 @@ payload = {
     "text": "在一无所知中, 梦里的一天结束了，一个新的轮回便会开始",
     "audio": "data:audio/mpeg;base64,aGVsbG93b3JsZA=="
 }
-headers = {"Authorization": "Bearer sk-kvexcgafqqjhfuhnwayfrtmcyuolmoaazrqelenmhkgaaazg"}
+headers = {"Authorization": "Bearer " + os.getenv("INDEXTTS_KEY")}
 
 response = requests.post(url, data=payload, files=files, headers=headers)
 

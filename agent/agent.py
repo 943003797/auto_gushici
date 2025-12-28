@@ -127,7 +127,7 @@ def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
         "speed": 1,
         "gain": 0
     }
-    headers = {"Authorization": "Bearer sk-gkvexcgafqqjhfuhnwayfrtmcyuolmoaazrqelenmhkgaaazg","Content-Type": "application/json"}
+    headers = {"Authorization": "Bearer " + os.getenv("INDEXTTS_KEY"),"Content-Type": "application/json"}
     response = requests.post("https://api.siliconflow.cn/v1/audio/speech", json=payload, headers=headers)
     try:
         with open(out_path, "wb") as f: 
@@ -137,10 +137,8 @@ def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
         return False
 
 async def generate_tts(title: str, poetry: str, out_dir: str = "") -> bool:
-    print(poetry)
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
-    print(f"{out_dir}/title.mp3")
     # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     for item in json.loads(poetry):
         time.sleep(2)
