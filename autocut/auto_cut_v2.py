@@ -63,7 +63,7 @@ class autoCut():
                                     clip_settings=draft.ClipSettings(transform_x=-0.85,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
         TextSegment.add_animation(TextIntro.冰雪飘动, 1500000)
         TextSegment.add_animation(TextOutro.渐隐, 500000)
-        self.script.add_segment(TextSegment, 'SY')
+        # self.script.add_segment(TextSegment, 'SY')
         #诗词背景
         video_material = draft.VideoMaterial(os.path.join(self.bgv_dir, self.bgv))
         video_duration = video_material.duration
