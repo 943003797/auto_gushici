@@ -177,15 +177,15 @@ class autoCut():
             # self.script.add_segment(video_segment, 'BGV')
 
             # 蒙版贴纸
-            # StickerSegment = draft.StickerSegment(
-            #     resource_id = "7226264888031694091",
-            #     target_timerange = trange(int(self.nowS), int(audio_duration) + 500000),
-            #     clip_settings = draft.ClipSettings(
-            #         scale_x = 2,
-            #         scale_y = 0.25
-            #     )
-            # )
-            # self.script.add_segment(StickerSegment, 'STK')
+            StickerSegment = draft.StickerSegment(
+                resource_id = "7226264888031694091",
+                target_timerange = trange(int(self.nowS), int(audio_duration) + 500000),
+                clip_settings = draft.ClipSettings(
+                    scale_x = 2,
+                    scale_y = 0.25
+                )
+            )
+            self.script.add_segment(StickerSegment, 'STK')
             # 字幕素材
             # title = item['shiju']
             title = '123|456'

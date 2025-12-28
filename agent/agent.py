@@ -129,6 +129,7 @@ def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
     }
     headers = {"Authorization": "Bearer " + os.getenv("INDEXTTS_KEY"),"Content-Type": "application/json"}
     response = requests.post("https://api.siliconflow.cn/v1/audio/speech", json=payload, headers=headers)
+    print(response.text)
     try:
         with open(out_path, "wb") as f: 
             f.write(response.content)
