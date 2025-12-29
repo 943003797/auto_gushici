@@ -43,7 +43,9 @@ def generate_cover(
     if not valid_texts:
         return None, "请至少输入一行文字内容"
 
-    output_path = "generated_cover.png"
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = f"catch/cover/generated_cover_{timestamp}.png"
 
     try:
         cover.add_text_to_cover(
@@ -111,12 +113,12 @@ def create_ui():
                 )
 
                 text2 = gr.Textbox(
-                    label="第二行文字(黄:FBD26A)",
+                    label="第二行文字",
                     placeholder="请输入第二行文字...",
                     lines=1
                 )
                 color2 = gr.ColorPicker(
-                    label="第二行文字颜色(黄:FBD26A)",
+                    label="第二行文字颜色",
                     value="#FFFFFF"
                 )
 
@@ -142,16 +144,16 @@ def create_ui():
 
                 font_size_slider = gr.Slider(
                     minimum=24,
-                    maximum=145,
-                    value=145,
+                    maximum=120,
+                    value=48,
                     step=4,
                     label="字体大小"
                 )
 
                 line_spacing_slider = gr.Slider(
                     minimum=10,
-                    maximum=120,
-                    value=120,
+                    maximum=60,
+                    value=20,
                     step=2,
                     label="行距"
                 )
