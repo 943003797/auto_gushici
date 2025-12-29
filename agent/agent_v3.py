@@ -102,7 +102,7 @@ def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
         speech_rate = 0.95,
         additional_params={"bit_rate": 64},
         seed = random.randint(0, 65535),
-        language_hints = "zh"
+        language_hints = ["zh"]
     )
     audio_result = synthesizer.call(text)
     try:
@@ -115,12 +115,16 @@ def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
     except Exception as e:
         return False
 
-def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
+def generate_audio_indextts2(text: str = "", out_path: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
+    # 使用用户选择的参考音频文件，如果没有指定则使用默认文件
+    if not os.path.exists(reference_audio):
+        reference_audio = "material/reference_audio/风吟.wav"  # 回退到默认文件
+    
     payload = {
         "model": "IndexTeam/IndexTTS-2",
         "input": text,
         "max_tokens": 2048,
-        "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open("material/reference_audio/风吟.wav", "rb").read()).decode()}],
+        "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open(reference_audio, "rb").read()).decode()}],
         "response_format": "mp3",
         "sample_rate": 32000,
         "stream": True,
@@ -135,28 +139,28 @@ def generate_audio_indextts2(text: str = "", out_path: str = "") -> bool:
         return True
     except Exception as e:
         return False
-async def generate_text(text: str = "", name: str = "", out_dir: str = "") -> bool:
+async def generate_text(text: str = "", name: str = "", out_dir: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
-    generate_audio_indextts2(text=text + '。', out_path=f"{out_dir}/{name}")
+    generate_audio_indextts2(text=text + '。', out_path=f"{out_dir}/{name}", reference_audio=reference_audio)
     return True
-async def generate_tts(title: str, wenan: str, poetry: str, out_dir: str = "") -> bool:
+async def generate_tts(title: str, wenan: str, poetry: str, out_dir: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
     # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     wenanList = wenan.split('，')
     for key, str in enumerate(wenanList):
         time.sleep(1)
-        generate_audio_indextts2(text=str + '。', out_path=f"{out_dir}/wenan_{key}.mp3")
+        generate_audio_indextts2(text=str + '。', out_path=f"{out_dir}/wenan_{key}.mp3", reference_audio=reference_audio)
     if not poetry:
         return True
     print(poetry)
     for item in json.loads(poetry):
         shangju = item["shangju"]
         xiaju = item["xiaju"]
-        generate_audio_indextts2(text=shangju + '。', out_path=f"{out_dir}/{item['id']}_1.mp3")
+        generate_audio_indextts2(text=shangju + '。', out_path=f"{out_dir}/{item['id']}_1.mp3", reference_audio=reference_audio)
         time.sleep(1)
-        generate_audio_indextts2(text=xiaju + '。', out_path=f"{out_dir}/{item['id']}_2.mp3")
+        generate_audio_indextts2(text=xiaju + '。', out_path=f"{out_dir}/{item['id']}_2.mp3", reference_audio=reference_audio)
         time.sleep(1)
     return True
 
