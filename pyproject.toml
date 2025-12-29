@@ -1,11 +1,10 @@
 [project]
 name = "auto-gushici"
 version = "0.1.0"
-description = "Add your description here"
+description = "古诗词短视频自动剪辑系统"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "agentscope>=1.0.8",
     "autogen-agentchat>=0.7.5",
     "autogen-ext[azure,openai]>=0.7.5",
     "dashscope>=1.25.2",
