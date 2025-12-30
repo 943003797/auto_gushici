@@ -25,10 +25,10 @@ def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
         return True
     except Exception as e:
         return False
-txt = '<speak rate="2">我的语速比正常人快。</speak>'
+txt = '<speak rate=\"1\">终不似，<phoneme alphabet=\"py\" ph=\"shao4 nian2 you2\">少年游。</phoneme></speak>'
 # 对 txt 中的双引号进行转义，防止被误解析
-txt_escaped = txt.replace('"', '\\"')
-print(txt_escaped)
+# txt_escaped = txt.replace('"', '\\"')
+print(txt)
 
 
-generate_audio_cosyvoiceV3(text=txt_escaped, out_path="test.mp3")
+generate_audio_cosyvoiceV3(text=txt, out_path="test.mp3")

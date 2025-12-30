@@ -178,7 +178,7 @@ class autoCut():
             # 蒙版贴纸
             StickerSegment = draft.StickerSegment(
                 resource_id = "7226264888031694091",
-                target_timerange = trange(int(self.nowS), int(audio_duration) + 500000),
+                target_timerange = trange(int(self.nowS), int(audio_duration) + 250000),
                 clip_settings = draft.ClipSettings(
                     scale_x = 2,
                     scale_y = 0.25
@@ -231,7 +231,7 @@ class autoCut():
                                     border=draft.TextBorder(color=(0, 0, 0)),
                                     clip_settings=draft.ClipSettings(transform_y=-0.7, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
             TextSegment.add_animation(TextIntro.随机上升, 1300000)
-            TextSegment.add_animation(TextOutro.渐隐, 500000)
+            TextSegment.add_animation(TextOutro.渐隐, 250000)
             self.script.add_segment(TextSegment, 'ZZ')
             # 赏析
             TextSegment = draft.TextSegment(f"{item['yiwen']}", trange(self.nowS, int(audio_duration)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
@@ -240,9 +240,9 @@ class autoCut():
                                     border=draft.TextBorder(color=(0, 0, 0)),
                                     clip_settings=draft.ClipSettings(transform_y=-0.85, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
             TextSegment.add_animation(TextIntro.随机上升, 1500000)
-            TextSegment.add_animation(TextOutro.渐隐, 500000)
+            TextSegment.add_animation(TextOutro.渐隐, 250000)
             self.script.add_segment(TextSegment, 'SX')
-            indent = 500000
+            indent = 250000
             for key, item in enumerate(list):
                         if key == 0:
                             start = self.nowS
@@ -265,9 +265,9 @@ class autoCut():
                         TextSegment.add_animation(TextIntro.冰雪飘动, animation_duration)
                         TextSegment.add_animation(TextOutro.渐隐, animation_duration/3)
                         self.script.add_segment(TextSegment, 'T' + str(key))
-                        indent += 500000
-            print(audio_duration/500000)
-            self.nowS += audio_duration + 500000
+                        indent += 250000
+            print(audio_duration/250000)
+            self.nowS += audio_duration + 250000
         return 'Success'
     
     def addVideo(self, filename: str):
