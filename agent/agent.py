@@ -2,8 +2,7 @@ import os, asyncio, json, dashscope, random, base64, requests, time
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from pydantic import BaseModel, Field
-from dashscope.audio.tts_v2 import VoiceEnrollmentService, SpeechSynthesizer
-from dashscope.audio.tts_v2.speech_synthesizer import json
+from tts.cosyvoice.tts import TTS
 from dotenv import load_dotenv
 
 # Init env
@@ -77,74 +76,37 @@ async def general_poetry(title: str = "") -> list:
     print(json_content)
     return json.loads(json_content)["poetryList"]
 
-# Generate audio from text
-def generate_audio_cosyvoiceV1(text: str = "", out_path: str = "") -> bool:
-        dashscope.api_key = os.getenv("ALI_KEY")
-        target_model = "cosyvoice-v1"
-        voice_id = "cosyvoice-prefix-4eec46a3b5d8499a8c29c46766452a63"
-        synthesizer = SpeechSynthesizer(model=target_model, voice=voice_id)
-        audio_result = synthesizer.call(str(text))
-        try:
-            with open(out_path, "wb") as f:
-                if audio_result is not None:
-                    f.write(audio_result)
-                else:
-                    raise Exception("Geneal audio faild")
-            return True
-        except Exception as e:
-            return False
-# Generate audio from poetry
-def generate_audio_cosyvoiceV3(text: str = "", out_path: str = "") -> bool:
-    dashscope.api_key = os.getenv("ALI_KEY")
-    synthesizer = SpeechSynthesizer(
-        model = "cosyvoice-v3-plus",
-        voice = "cosyvoice-v3-plus-bailian-d52a1ddb0cbe4c79bf917fed46bda195",
-        speech_rate = 0.95,
-        additional_params={"bit_rate": 64},
-        seed = random.randint(0, 65535),
-        language_hints = ["zh"]
-    )
-    audio_result = synthesizer.call(text)
-    try:
-        with open(out_path, "wb") as f:
-            if audio_result is not None:
-                f.write(audio_result)
-            else:
-                raise Exception("General audio failed")
-        return True
-    except Exception as e:
-        return False
-
-def generate_audio_indextts2(text: str = "", out_path: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
-    # 如果参考音频文件不存在，使用默认值
-    if not os.path.exists(reference_audio):
-        reference_audio = "material/reference_audio/风吟.wav"
+# def generate_audio_indextts2(text: str = "", out_path: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
+#     # 如果参考音频文件不存在，使用默认值
+#     if not os.path.exists(reference_audio):
+#         reference_audio = "material/reference_audio/风吟.wav"
     
-    payload = {
-        "model": "IndexTeam/IndexTTS-2",
-        "input": text,
-        "max_tokens": 2048,
-        "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open(reference_audio, "rb").read()).decode()}],
-        "response_format": "mp3",
-        "sample_rate": 32000,
-        "stream": True,
-        "speed": 1,
-        "gain": 0
-    }
-    headers = {"Authorization": "Bearer " + (os.getenv("INDEXTTS_KEY") or ""),"Content-Type": "application/json"}
-    response = requests.post("https://api.siliconflow.cn/v1/audio/speech", json=payload, headers=headers)
-    print(response.text)
-    try:
-        with open(out_path, "wb") as f: 
-            f.write(response.content)
-        return True
-    except Exception as e:
-        return False
+#     payload = {
+#         "model": "IndexTeam/IndexTTS-2",
+#         "input": text,
+#         "max_tokens": 2048,
+#         "references": [{"audio": "data:audio/wav;base64," + base64.b64encode(open(reference_audio, "rb").read()).decode()}],
+#         "response_format": "mp3",
+#         "sample_rate": 32000,
+#         "stream": True,
+#         "speed": 1,
+#         "gain": 0
+#     }
+#     headers = {"Authorization": "Bearer " + (os.getenv("INDEXTTS_KEY") or ""),"Content-Type": "application/json"}
+#     response = requests.post("https://api.siliconflow.cn/v1/audio/speech", json=payload, headers=headers)
+#     print(response.text)
+#     try:
+#         with open(out_path, "wb") as f: 
+#             f.write(response.content)
+#         return True
+#     except Exception as e:
+#         return False
 
 async def generate_text(text: str = "", name: str = "", out_dir: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
-    generate_audio_indextts2(text=text + '。', out_path=f"{out_dir}/{name}", reference_audio=reference_audio)
+    tts = TTS(voice_id="风吟")
+    tts.textToAudio(text=text + '。', out_path=f"{out_dir}/{name}")
     return True
 
 async def generate_tts(title: str, wenan: str = "", poetry: str = "", out_dir: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
@@ -156,16 +118,19 @@ async def generate_tts(title: str, wenan: str = "", poetry: str = "", out_dir: s
         wenanList = wenan.split('，')
         for key, str in enumerate(wenanList):
             if str.strip():  # 只处理非空字符串
-                generate_audio_indextts2(text=str + '。', out_path=f"{out_dir}/wenan_{key}.mp3", reference_audio=reference_audio)
+                tts = TTS(voice_id="风吟")
+                tts.textToAudio(text=str + '。', out_path=f"{out_dir}/wenan_{key}.mp3")
     
     # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
     if poetry:  # 只有当poetry不为空时才生成诗词音频
         for item in json.loads(poetry):
-            time.sleep(2)
             shangju = item["shangju"]
             xiaju = item["xiaju"]
-            generate_audio_indextts2(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3", reference_audio=reference_audio)
-            generate_audio_indextts2(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3", reference_audio=reference_audio)
+            tts = TTS(voice_id="风吟")
+            time.sleep(1)
+            tts.textToAudio(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
+            time.sleep(1)
+            tts.textToAudio(text=xiaju, out_path=f"{out_dir}/{item['id']}_2.mp3")
     return True
 
 # Test
