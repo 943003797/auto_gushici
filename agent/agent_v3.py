@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from dashscope.audio.tts_v2 import VoiceEnrollmentService, SpeechSynthesizer
 from dashscope.audio.tts_v2.speech_synthesizer import json
 from dotenv import load_dotenv
+from tts.cosyvoice.tts import TTS
 
 # Init env
 load_dotenv()
