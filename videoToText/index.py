@@ -1,33 +1,45 @@
+import base64,os
 from zai import ZhipuAiClient
-import base64
+from dotenv import load_dotenv
 
-client = ZhipuAiClient(api_key="f35ff2adf86a469ebe366f3f23f05e0f.ZAVA6V7XT6y1l2LL")  # 填写您自己的APIKey
+load_dotenv()
 
-img_path = "snippet/hudie.mp4"
-with open(img_path, "rb") as img_file:
-    img_base = base64.b64encode(img_file.read()).decode("utf-8")
+client = ZhipuAiClient(api_key=os.getenv("BIG_MODEL"))  # 填写您自己的APIKey
 
-response = client.chat.completions.create(
-    model="glm-4.6v-flash",
-    messages=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "video_url",
-                    "video_url": {
-                        "url": img_base
-                    }
-                },
-                {
-                    "type": "text",
-                    "text": "总结其中权重最高的三个要素标签.和一句话总结视频内容.?"
-                }
-            ]
+class video:
+    def __init__(self):
+        self.model="glm-4.6v-flash"
+        self.thinking={
+            "type": "enabled"
         }
-    ],
-    thinking={
-        "type": "enabled"
-    }
-)
-print(response.choices[0].message.content)
+
+    def get_video_tag(self, video_path: str):
+        with open(video_path, "rb") as img_file:
+            img_base = base64.b64encode(img_file.read()).decode("utf-8")
+
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "video_url",
+                            "video_url": {
+                                "url": img_base
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "简短一句话描述内容"
+                        }
+                    ]
+                }
+            ],
+            thinking=self.thinking
+        )
+        return response.choices[0].message.content
+
+if __name__ == "__main__":
+    video = video()
+    print(video.get_video_tag("D:/Material/split/358.mp4"))

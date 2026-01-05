@@ -99,7 +99,6 @@ class VectorDB:
                 documents=texts,
                 metadatas=metadatas
             )
-            print(f"成功添加 {len(texts)} 个文档到数据库")
             return True
         except Exception as e:
             print(f"添加文档失败: {e}")
@@ -153,28 +152,28 @@ class VectorDB:
             print(f"删除集合失败: {e}")
 
 
-# 使用示例
-def main():
-    # 初始化向量数据库
-    vector_db = VectorDB(collection_name="my_collection", db_path="./Vector/db/video_db")
-    
-    # 添加文档
-    documents = ["This is a document about pineapple"]
-    metadatas = [{"source": "document1"}]
-    success = vector_db.add_documents(documents, metadatas=metadatas)
-    if success:
-        print("文档添加成功")
-    
-    # 搜索相似文档
-    query = "I like tropical fruits"
-    results = vector_db.search(query, n_results=2)
-    
-    print(f"\n查询: {query}")
-    print("搜索结果:")
-    for i, (doc, distance, meta) in enumerate(zip(results['documents'][0], results['distances'][0], results['metadatas'][0])):
-        print(f"  {i+1}. 文档: {doc}")
-        print(f"     相似度: {1 - distance:.4f}")
-        print(f"     元数据: {meta}")
+    # # 使用示例
+    def test():
+        # 初始化向量数据库
+        vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
+        
+        # 添加文档
+        documents = ["This is a document about pineapple"]
+        metadatas = [{"source": "document1"}]
+        success = vector_db.add_documents(documents, metadatas=metadatas)
+        if success:
+            print("文档添加成功")
+        
+    #     # 搜索相似文档
+    #     query = "I like tropical fruits"
+    #     results = vector_db.search(query, n_results=2)
+        
+    #     print(f"\n查询: {query}")
+    #     print("搜索结果:")
+    #     for i, (doc, distance, meta) in enumerate(zip(results['documents'][0], results['distances'][0], results['metadatas'][0])):
+    #         print(f"  {i+1}. 文档: {doc}")
+    #         print(f"     相似度: {1 - distance:.4f}")
+    #         print(f"     元数据: {meta}")
     
     # 获取集合信息
     # info = vector_db.get_collection_info()
@@ -182,4 +181,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # 初始化向量数据库
+    vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
+    
+    # 添加文档
+    documents = ["This is a document about pineapple"]
+    metadatas = [{"source": "document1"}]
+    success = vector_db.add_documents(documents, metadatas=metadatas)
+    if success:
+        print("文档添加成功")
+
+
+    # vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
+    # # vector_db.add_documents(['毛笔'], ['1'])
+
+    # results = vector_db.search('石墙', n_results=2)
+    # print(results['documents'][0][0])
+    # print(results['metadatas'][0][0]['fileName'])
