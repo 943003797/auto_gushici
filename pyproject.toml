@@ -10,11 +10,8 @@ dependencies = [
     "chromadb>=1.4.0",
     "dashscope>=1.25.2",
     "gradio>=6.0.1",
-<<<<<<< HEAD
     "moviepy>=2.2.1",
-=======
     "openai>=1.0.0",
->>>>>>> b53602061751222e4c5d42d7ab522fdffedc7e2d
     "pyjianyingdraft>=0.2.5",
     "python-dotenv>=1.0.1",
 ]
