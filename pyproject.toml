@@ -10,6 +10,7 @@ dependencies = [
     "chromadb>=1.4.0",
     "dashscope>=1.25.2",
     "gradio>=6.0.1",
+    "openai>=1.0.0",
     "pyjianyingdraft>=0.2.5",
     "python-dotenv>=1.0.1",
 ]
