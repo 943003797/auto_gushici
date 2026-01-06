@@ -3,6 +3,7 @@ import chromadb
 from openai import OpenAI
 from dotenv import load_dotenv
 from typing import List, Optional, Dict, Any
+import uuid
 
 class VectorDB:
     def __init__(self, collection_name: str = "my_collection", db_path: str = "./Vector/db/video_db"):
@@ -85,7 +86,7 @@ class VectorDB:
             添加是否成功
         """
         if ids is None:
-            ids = [f"id_{i}" for i in range(len(texts))]
+            ids = [str(uuid.uuid4()) for _ in texts]
         
         if len(texts) != len(ids):
             raise ValueError("texts和ids的长度必须一致")
@@ -182,19 +183,18 @@ class VectorDB:
 
 if __name__ == "__main__":
     # 初始化向量数据库
-    vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
+    vector_db = VectorDB(collection_name="video_10", db_path="./Vector/db/video")
     
     # 添加文档
-    documents = ["This is a document about pineapple"]
-    metadatas = [{"source": "document1"}]
-    success = vector_db.add_documents(documents, metadatas=metadatas)
-    if success:
-        print("文档添加成功")
+    # documents = ["2"]
+    # metadatas = [{"source": "document1"}]
+    # success = vector_db.add_documents(documents, metadatas=metadatas)
+    # if success:
+    #     print("文档添加成功")
 
 
-    # vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
-    # # vector_db.add_documents(['毛笔'], ['1'])
+    # # vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
+    # # # vector_db.add_documents(['毛笔'], ['1'])
 
-    # results = vector_db.search('石墙', n_results=2)
-    # print(results['documents'][0][0])
-    # print(results['metadatas'][0][0]['fileName'])
+    results = vector_db.search('铃铛', n_results=5)
+    print(results)
