@@ -15,23 +15,19 @@ def format_text(content):
         if not structured_data:
             return "没有有效的文案内容"
         
-        # 将结构化数据格式化为可读的文本
-        formatted_text = "[\n"
-        for i, item in enumerate(structured_data):
-            formatted_text += f"  {{\n"
-            formatted_text += f"    'id': {item['id']},\n"
-            formatted_text += f"    'text': '{item['text']}',\n"
-            formatted_text += f"    'audio_length': {item['audio_length']},\n"
-            # video_path 和 audio_patch 暂时留空（配音后会被更新）
-            formatted_text += f"    'video_path': '',\n"
-            formatted_text += f"    'audio_patch': ''\n"
-            if i < len(structured_data) - 1:
-                formatted_text += "  },\n"
-            else:
-                formatted_text += "  }\n"
-        formatted_text += "]"
+        # 将结构化数据格式化为JSON字符串
+        import json
+        result_data = []
+        for item in structured_data:
+            result_data.append({
+                'id': item['id'],
+                'text': item['text'],
+                'audio_length': item['audio_length'],
+                'video_path': '',  # 暂时留空（配音后会被更新）
+                'audio_patch': ''  # 暂时留空（配音后会被更新）
+            })
         
-        return formatted_text
+        return json.dumps(result_data, ensure_ascii=False, indent=2)
     except Exception as e:
         return f"格式化出错: {str(e)}"
 
@@ -114,7 +110,14 @@ def create_interface():
             # 左侧：文案格式化功能
             with gr.Column(scale=1):
                 gr.Markdown("### 📝 文案格式化")
-                
+                # 主题输入框
+                topic_input = gr.Textbox(
+                    label="主题名称",
+                    placeholder="请输入项目主题名称...",
+                    info="将作为项目文件夹名称",
+                    elem_id="topic_input"
+                )
+
                 input_text = gr.Textbox(
                     label="输入文案",
                     placeholder="请在此输入文案内容，每行一句话...",
@@ -139,16 +142,8 @@ def create_interface():
                 )
             
             # 右侧：配音功能
-            with gr.Column(scale=1):
+            with gr.Column():
                 gr.Markdown("### 🎤 配音功能")
-                
-                # 主题输入框
-                topic_input = gr.Textbox(
-                    label="主题名称",
-                    placeholder="请输入项目主题名称...",
-                    info="将作为项目文件夹名称",
-                    elem_id="topic_input"
-                )
                 
                 # 配音按钮
                 voice_button = gr.Button(
@@ -158,12 +153,12 @@ def create_interface():
                     elem_id="voice_button"
                 )
                 
-                # TTS 音频预览
+                # 文案片段选择
                 tts_dropdown = gr.Dropdown(
                     choices=["请选择"],
-                    label="音频文件选择",
+                    label="文案片段选择",
                     value="请选择",
-                    info="选择要播放的音频文件",
+                    info="选择要播放的文案片段",
                     interactive=True,  # 修复：设置为可交互
                     elem_id="tts_dropdown"
                 )
@@ -175,6 +170,24 @@ def create_interface():
                     interactive=True,  # 确保音频播放器是可交互的
                     elem_id="tts_audio_player"
                 )
+                
+                # 视频播放器
+                with gr.Row():
+                    tts_video_player = gr.Video(
+                        label="视频播放器",
+                        interactive=True,
+                        elem_id="tts_video_player",
+                        scale=3  # 视频播放器占据3/4的宽度
+                    )
+                    
+                    # 配视频按钮
+                    video_button = gr.Button(
+                        value="🎥 开始配视频",
+                        variant="secondary",
+                        size="md",
+                        elem_id="video_button",
+                        scale=1  # 按钮占据1/4的宽度
+                    )
         
         # 绑定按钮点击事件
         format_button.click(
@@ -184,23 +197,61 @@ def create_interface():
         )
         
         # 绑定音频选择变化事件
-        def update_tts_audio_preview(choice, topic_name):
-            # 如果是"请选择"或错误提示信息，直接返回 None
-            if choice == "请选择" or choice == "未找到音频文件":
-                return None
+        def update_tts_audio_preview(choice, topic_name, output_data):
+            print(f"[DEBUG] 选择: {choice}, 主题: {topic_name}, 输出数据存在: {bool(output_data)}")
             
-            # 构建实际的TTS音频文件路径
-            if topic_name:
-                audio_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/{choice}"
-                if os.path.exists(audio_path):
-                    return audio_path
+            # 如果是"请选择"，直接返回 None
+            if choice == "请选择":
+                return None, None
             
-            return None
+            audio_path = None
+            video_path = None
+            
+            # 从输出数据中查找对应的音频和视频路径
+            if output_data and choice != "请选择":
+                try:
+                    # 解析JSON数据
+                    import json
+                    data = json.loads(output_data)
+                    print(f"[DEBUG] JSON数据解析成功，包含 {len(data)} 个项目")
+                    print(f"[DEBUG] 第一个项目示例: {data[0] if data else 'None'}")
+                    
+                    # 从choice中提取句子ID
+                    if "句子" in choice:
+                        sentence_id = int(choice.split("句子")[1].split(":")[0])
+                        print(f"[DEBUG] 提取的句子ID: {sentence_id}")
+                        
+                        # 查找对应的audio_patch和video_path
+                        for item in data:
+                            if item.get('id') == sentence_id:
+                                print(f"[DEBUG] 找到匹配的项目ID: {item.get('id')}")
+                                # 获取音频路径 - 直接使用audio_patch的值
+                                audio_patch = item.get('audio_patch', '')
+                                print(f"[DEBUG] 原始audio_patch: '{audio_patch}'")
+                                
+                                # 构建完整音频路径
+                                if audio_patch:
+                                    audio_path = audio_patch
+                                    print(f"[DEBUG] 设置音频路径: {audio_path}")
+                                
+                                # 获取视频路径
+                                video_patch = item.get('video_path', '')
+                                print(f"[DEBUG] 原始video_path: '{video_patch}'")
+                                if video_patch:
+                                    video_path = video_patch
+                                    print(f"[DEBUG] 设置视频路径: {video_path}")
+                                break
+                except Exception as e:
+                    print(f"[ERROR] 解析JSON数据时出错: {e}")
+                    print(f"[DEBUG] 原始输出数据: {output_data[:500]}...")
+            
+            print(f"[DEBUG] 最终结果 - 选择: {choice}, 音频路径: {audio_path}, 视频路径: {video_path}")
+            return audio_path, video_path
         
         tts_dropdown.change(
             fn=update_tts_audio_preview,
-            inputs=[tts_dropdown, topic_input],
-            outputs=tts_audio_player
+            inputs=[tts_dropdown, topic_input, output_text],
+            outputs=[tts_audio_player, tts_video_player]
         )
         
         # 绑定配音按钮点击事件
@@ -236,33 +287,45 @@ def create_interface():
                     # 获取更新后的结构化数据并格式化为JSON字符串
                     updated_data = result.get('voice_result', {}).get('updated_data', [])
                     if updated_data:
-                        formatted_json = "[\n"
-                        for i, item in enumerate(updated_data):
-                            formatted_json += f"  {{\n"
-                            formatted_json += f"    'id': {item['id']},\n"
-                            formatted_json += f"    'text': '{item['text']}',\n"
-                            formatted_json += f"    'audio_length': {item['audio_length']},\n"
-                            # video_path 暂时留空
-                            formatted_json += f"    'video_path': '',\n"
-                            # audio_patch 显示完整音频路径
-                            audio_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/{item.get('audio_patch', '')}"
-                            formatted_json += f"    'audio_patch': '{audio_path}'\n"
-                            if i < len(updated_data) - 1:
-                                formatted_json += "  },\n"
+                        import json
+                        result_data = []
+                        for item in updated_data:
+                            # 处理音频路径
+                            audio_patch = item.get('audio_patch', '')
+                            if audio_patch:
+                                # 确保路径使用正斜杠
+                                audio_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/{audio_patch}"
+                                audio_path = audio_path.replace('\\', '/')
                             else:
-                                formatted_json += "  }\n"
-                        formatted_json += "]"
+                                audio_path = ''
+                            
+                            # 处理视频路径
+                            video_path = item.get('video_path', '')
+                            if not video_path or video_path == 'none':
+                                # 构造默认视频路径
+                                video_filename = f"sentence_{item['id']}.mp4"
+                                video_path = f"draft/JianyingPro Drafts/{topic_name}/video_output/{video_filename}"
+                            video_path = video_path.replace('\\', '/')
+                            
+                            result_data.append({
+                                'id': item['id'],
+                                'text': item['text'],
+                                'audio_length': item['audio_length'],
+                                'video_path': video_path,
+                                'audio_patch': audio_path
+                            })
+                        
+                        formatted_json = json.dumps(result_data, ensure_ascii=False, indent=2)
                     else:
                         formatted_json = ""
                     
-                    # 参考v4.py的模式：重新加载 TTS 下拉框
-                    audio_dir = Path(f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/")
-                    if audio_dir.exists():
-                        draft_files = ["请选择"] + [f.name for f in audio_dir.iterdir() if f.suffix.lower() in [".wav", ".mp3"]]
-                    else:
-                        draft_files = ["请选择", "未找到音频文件"]
+                    # 生成文案片段选择列表
+                    segment_choices = ["请选择"]
+                    for item in updated_data:
+                        choice_label = f"句子{item['id']}: {item['text'][:20]}..."
+                        segment_choices.append(choice_label)
                     
-                    yield (gr.update(choices=draft_files, value="请选择"), formatted_json)
+                    yield (gr.update(choices=segment_choices, value="请选择"), formatted_json)
                 else:
                     yield (gr.update(choices=["请选择"]), "")
                     
@@ -275,6 +338,13 @@ def create_interface():
             inputs=[input_text, topic_input],
             outputs=[tts_dropdown, output_text]
         )
+
+        # 绑定视频按钮点击事件（暂时注释掉，等待实现）
+        # video_button.click(
+        #     fn=generate_video,
+        #     inputs=[input_text, topic_input],
+        #     outputs=[tts_video_player]
+        # )
         
         # 添加示例文案
         gr.Examples(
