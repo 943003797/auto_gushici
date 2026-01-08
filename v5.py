@@ -87,7 +87,7 @@ def voice_generation(content, topic_name):
                 voice_choices = []
                 for item in updated_data:
                     if item.get('audio_patch'):
-                        choice_label = f"句子{item['id']}: {item['text'][:20]}..."
+                        choice_label = f"{item['id']}: {item['text'][:20]}..."
                         voice_choices.append(choice_label)
             else:
                 formatted_json = ""
