@@ -1,7 +1,8 @@
 import gradio as gr
-from agent.agent_v5 import format_content, process_complete_workflow
+from agent.agent_v5 import format_content, process_complete_workflow, match_video
 from pathlib import Path
 import os
+import json
 
 def format_text(content):
     """
@@ -339,12 +340,54 @@ def create_interface():
             outputs=[tts_dropdown, output_text]
         )
 
-        # 绑定视频按钮点击事件（暂时注释掉，等待实现）
-        # video_button.click(
-        #     fn=generate_video,
-        #     inputs=[input_text, topic_input],
-        #     outputs=[tts_video_player]
-        # )
+        # 绑定视频按钮点击事件
+        def match_video_for_selection(choice, topic_name, output_data):
+            # 如果是"请选择"，直接返回
+            if choice == "请选择":
+                return gr.update(value=None), output_data
+
+            video_path = None
+            
+            # 从输出数据中查找对应的文本
+            if output_data and choice != "请选择":
+                try:
+                    # 解析JSON数据
+                    data = json.loads(output_data)
+                    
+                    # 从choice中提取句子ID
+                    if "句子" in choice:
+                        sentence_id = int(choice.split("句子")[1].split(":")[0])
+                        
+                        # 查找对应的文本
+                        for item in data:
+                            if item.get('id') == sentence_id:
+                                text = item.get('text', '')
+                                # 调用match_video获取视频路径
+                                if text:
+                                    video_path = match_video(text)
+                                    print(f"[DEBUG] 匹配视频 - 文案: {text[:30]}..., 视频路径: {video_path}")
+                                    
+                                    # 更新video_path
+                                    item['video_path'] = video_path if video_path else ''
+                                    
+                                    # 重新生成JSON字符串
+                                    output_data = json.dumps(data, ensure_ascii=False, indent=2)
+                                    
+                                    # 更新下拉框的值为当前选择的句子
+                                    choice_value = choice
+                                    
+                                    print(f"[DEBUG] 更新后的JSON数据: {output_data[:200]}...")
+                                    break
+                except Exception as e:
+                    print(f"[ERROR] 匹配视频时出错: {e}")
+            
+            return video_path, output_data, choice
+        
+        video_button.click(
+            fn=match_video_for_selection,
+            inputs=[tts_dropdown, topic_input, output_text],
+            outputs=[tts_video_player, output_text, tts_dropdown]
+        )
         
         # 添加示例文案
         gr.Examples(
@@ -361,4 +404,4 @@ def create_interface():
 
 if __name__ == "__main__":
     demo = create_interface()
-    demo.launch(server_port=9005)
+    demo.launch(server_port=9005, allowed_paths=["D:/Material/fragment"])

@@ -1,6 +1,18 @@
 import json, os, shutil
 from tts.cosyvoice.tts import TTS
 
+def match_video(text: str) -> str:
+    """
+    根据文案内容匹配对应的视频文件路径
+    
+    Args:
+        text (str): 输入的文案内容
+        
+    Returns:
+        str: 匹配到的视频文件路径，若未匹配到则返回空字符串
+    """
+    return "D:/Material/fragment/1.mp4"
+
 def format_content(content):
     """
     将传入的文案格式化为结构化数据
