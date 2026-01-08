@@ -2,6 +2,9 @@ import random, os, dashscope
 
 from dashscope.audio.tts_v2 import SpeechSynthesizer
 
+from dotenv import load_dotenv
+load_dotenv()
+
 class TTS:
     def __init__(self, voice_id: str = "风吟")->bool:
         """

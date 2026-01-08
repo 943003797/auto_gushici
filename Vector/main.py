@@ -196,5 +196,5 @@ if __name__ == "__main__":
     # # vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
     # # # vector_db.add_documents(['毛笔'], ['1'])
 
-    results = vector_db.search('铃铛', n_results=5)
+    results = vector_db.search('一棵挂满红色祈福布条的枯树前', n_results=1)
     print(results)
