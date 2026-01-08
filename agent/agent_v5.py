@@ -1,5 +1,44 @@
 import json, os, shutil
+import math
+from mutagen import File
+from mutagen.wave import WAVE
 from tts.cosyvoice.tts import TTS
+
+def get_audio_duration(audio_path):
+    """
+    获取音频文件的时长（秒）
+    
+    Args:
+        audio_path (str): 音频文件路径
+        
+    Returns:
+        int: 音频时长（秒），不足一秒则向上取整
+    """
+    try:
+        if not os.path.exists(audio_path):
+            return None
+        
+        # 首先尝试使用 mutagen.File（支持多种格式）
+        try:
+            audio = File(audio_path)
+            if audio is not None and hasattr(audio, 'info') and hasattr(audio.info, 'length'):
+                duration = audio.info.length
+                return math.ceil(duration)
+        except Exception as e:
+            print(f"使用 mutagen.File 获取时长失败: {e}")
+        
+        # 如果 mutagen.File 失败，尝试使用 WAVE 类
+        try:
+            audio = WAVE(audio_path)
+            duration = audio.info.length
+            return math.ceil(duration)
+        except Exception as e:
+            print(f"使用 WAVE 获取时长失败: {e}")
+        
+        return None
+    except Exception as e:
+        print(f"获取音频时长失败: {e}")
+        return None
 
 def match_video(text: str) -> str:
     """
@@ -145,7 +184,9 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
             for item in structured_data:
                 if item['id'] == result['id']:
                     if result['status'] == 'success':
-                        item['audio_length'] = None  # 后续可以添加音频时长检测
+                        # 获取音频时长
+                        audio_length = get_audio_duration(result['audio_path'])
+                        item['audio_length'] = audio_length if audio_length is not None else None
                         item['video_path'] = result['audio_path']
                         # 更新audio_patch为音频文件名（相对路径）
                         item['audio_patch'] = os.path.basename(result['audio_path'])
