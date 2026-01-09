@@ -5,7 +5,7 @@ import cv2
 
 load_dotenv()
 
-client = ZhipuAiClient(api_key=os.getenv("BIG_MODEL"))  # 填写您自己的APIKey
+client = ZhipuAiClient(api_key=os.getenv("BIGMODEL_KEY"))  # 填写您自己的APIKey
 
 class video:
     def __init__(self):
