@@ -1,113 +1,137 @@
-class AutoCut:
-    def __init__(self, content):
-        """
-        初始化AutoCut类，解析文案内容
-        
-        Args:
-            content (str): 待解析的文案内容
-        """
-        self.content = content
-        self.parsed_data = self._parse_content()
-    
-    def _parse_content(self):
-        """
-        解析文案内容，将文本按句子分割并转换为指定结构
-        
-        Returns:
-            list: 包含多个字典的列表，每个字典包含id、text、audio_length、video_path
-        """
-        # 按句子分割文本，去除空行和只包含空格的行
-        sentences = []
-        lines = self.content.strip().split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            if line:  # 非空行
-                sentences.append(line)
-        
-        # 构建返回数据
-        parsed_data = []
-        for i, sentence in enumerate(sentences, 1):
-            parsed_data.append({
-                "id": i,
-                "text": sentence,
-                "audio_length": None,  # 暂时为空，后续可以添加语音识别功能
-                "video_path": ""      # 暂时为空，后续可以添加视频处理功能
-            })
-        
-        return parsed_data
-    
-    def get_parsed_data(self):
-        """
-        获取解析后的数据
-        
-        Returns:
-            list: 解析后的数据结构
-        """
-        return self.parsed_data
-    
-    def add_audio_length(self, sentence_id, length):
-        """
-        为指定句子添加音频时长
-        
-        Args:
-            sentence_id (int): 句子ID
-            length (float): 音频时长（秒）
-        """
-        for item in self.parsed_data:
-            if item["id"] == sentence_id:
-                item["audio_length"] = length
-                break
-    
-    def add_video_path(self, sentence_id, video_path):
-        """
-        为指定句子添加视频路径
-        
-        Args:
-            sentence_id (int): 句子ID
-            video_path (str): 视频文件路径
-        """
-        for item in self.parsed_data:
-            if item["id"] == sentence_id:
-                item["video_path"] = video_path
-                break
-    
-    def get_total_duration(self):
-        """
-        计算总音频时长
-        
-        Returns:
-            float: 总时长（秒）
-        """
-        total_duration = 0
-        for item in self.parsed_data:
-            if item["audio_length"] is not None:
-                total_duration += item["audio_length"]
-        return total_duration
-    
-    def get_sentence_by_id(self, sentence_id):
-        """
-        根据ID获取指定句子
-        
-        Args:
-            sentence_id (int): 句子ID
-            
-        Returns:
-            dict or None: 找到的句子字典，如果不存在返回None
-        """
-        for item in self.parsed_data:
-            if item["id"] == sentence_id:
-                return item
-        return None
+import os, json
+import pyJianYingDraft as draft
+from pyJianYingDraft import TextIntro, TextOutro, Text_loop_anim, Mask_type, VideoSceneEffectType, animation, IntroType, OutroType, Transition_type, trange, GroupAnimationType
+from pyJianYingDraft.script_file import json
+from dotenv import load_dotenv
 
-if __name__ == "__main__":
-    # 示例文案内容
-    example_content = """
-    是曾经拥有过全世界的绚烂，最后只剩下一地鸡毛的凄凉。
-    这种落差，比从未拥有过更让人绝望。
-    """
-    # 创建AutoCut实例
-    auto_cut = AutoCut(example_content)
-    
-    # 打印解析后的数据
-    print(auto_cut.get_parsed_data())
+load_dotenv()
+
+class autoCut():
+    def __init__(self, title: str = "", list: str = "[]", bgm: str = "爱的供养间奏.mp3", bgv: str = "温柔细粉.mp4"):
+        self.title = title
+        self.list = json.loads(list)
+        self.tts_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/audioAlg/"
+        self.bgm_dir = "./material/bgm/"
+        self.bgv_dir = "./material/bgv/"
+        self.bgp_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/image/"
+        self.output_dir = os.getenv("DRAFT_DIR") + self.title
+        self.bgm = bgm
+        self.bgv = bgv
+        self.audioNowTime = 0
+        self.textNowTime = 0
+
+        self.script = draft.ScriptFile(1920, 1080)
+        self.script.add_track(draft.TrackType.text, 'SY')
+        self.script.add_track(draft.TrackType.audio, 'BGM')
+        self.script.add_track(draft.TrackType.audio, 'WENAN_AUDIO')
+        self.script.add_track(draft.TrackType.audio, 'TTS')
+        self.script.add_track(draft.TrackType.sticker, 'STK')
+        self.script.add_track(draft.TrackType.video, 'BGV', mute= True, relative_index=8)
+        self.script.add_track(draft.TrackType.video, 'BGVC', mute= True, relative_index=0)
+        self.script.add_track(draft.TrackType.text, 'WENAN_TEXT_1')
+        self.script.add_track(draft.TrackType.text, 'WENAN_TEXT_2')
+        self.script.add_track(draft.TrackType.text, 'T0')
+        self.script.add_track(draft.TrackType.text, 'T1')
+        self.script.add_track(draft.TrackType.text, 'T2')
+        self.script.add_track(draft.TrackType.text, 'T3')
+        self.script.add_track(draft.TrackType.text, 'T4')
+        self.script.add_track(draft.TrackType.text, 'T5')
+        self.script.add_track(draft.TrackType.text, 'T6')
+        self.script.add_track(draft.TrackType.text, 'ZZ')
+        self.script.add_track(draft.TrackType.text, 'SX')
+
+    def s(self, microseconds: int):
+        return microseconds * 1000000
+
+    def addBgm(self):
+        audio_bgm = draft.AudioMaterial(os.path.join(self.bgm_dir, self.bgm))
+        audio_bgm_lenth = audio_bgm.duration
+        self.script.add_material(audio_bgm)
+        print(self.audioNowTime)
+        audio_bgm_segment = draft.AudioSegment(audio_bgm, trange(0, self.audioNowTime),volume=0.4)
+        audio_bgm_segment.add_fade("0.2s", "1s")
+        self.script.add_segment(audio_bgm_segment, 'BGM')
+        # 水印
+        TextSegment = draft.TextSegment("和光同尘、", trange(0, self.audioNowTime),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+                                    font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                    style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
+                                    border=draft.TextBorder(alpha=0.2,color=(0, 0, 0)),
+                                    clip_settings=draft.ClipSettings(transform_x=-0.85,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+        TextSegment.add_animation(TextIntro.冰雪飘动, 1500000)
+        TextSegment.add_animation(TextOutro.渐隐, 500000)
+        self.script.add_segment(TextSegment, 'SY')
+
+    def addItem(self) -> str:
+        for item in self.list:
+            itemPeiyinNow = self.audioNowTime
+            audio_duration = 0
+            if os.path.exists(f"{item['audio_patch']}"):
+                # 音频
+                AudioMaterial = draft.AudioMaterial(os.path.join(f"{item['audio_patch']}"))
+                audio_length = AudioMaterial.duration
+                print(audio_length)
+                self.script.add_material(AudioMaterial)
+                AudioSegment = draft.AudioSegment(AudioMaterial,
+                                trange(int(itemPeiyinNow), int(audio_length)),
+                                volume=1)
+                self.script.add_segment(AudioSegment, 'TTS')
+                #背景
+                video_material = draft.VideoMaterial(item['video_path'])
+                video_duration = video_material.duration
+                self.script.add_material(video_material)
+                video_segment = draft.VideoSegment(material = video_material,
+                                                                target_timerange  = trange(int(itemPeiyinNow), int(audio_length)),
+                                                                volume=0)
+                video_segment.add_animation(IntroType.渐显, 300000)
+                video_segment.add_animation(OutroType.渐隐, 300000)
+                self.script.add_segment(video_segment, 'BGV')
+
+                # 字幕
+                TextSegment = draft.TextSegment(f"{item['text']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+                                        font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                        style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
+                                        border=draft.TextBorder(color=(0, 0, 0)),
+                                        clip_settings=draft.ClipSettings(transform_y=-0.9, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                TextSegment.add_animation(TextIntro.渐显, 500000)
+                TextSegment.add_animation(TextOutro.渐隐, 500000)
+                self.script.add_segment(TextSegment, 'ZZ')
+
+                itemPeiyinNow += audio_length
+                audio_duration+=audio_length
+                print(audio_duration/500000)
+                self.audioNowTime += audio_duration
+        return 'Success'
+    def general_draft(self):
+        try:
+            self.addItem()
+            self.addBgm()
+            # testObj.addVideo('bgv.mp4')
+            self.script.dump(self.output_dir + '/draft_content.json')
+            # # 导出
+            # ctrl = draft.JianyingController()
+            # 导出
+        except Exception as e:
+            print(f"生成草稿时发生错误: {str(e)}")
+            raise
+        return True
+
+if __name__ == '__main__':
+    title = "李清照词赏析"
+    list = """[
+    {
+        "id": 1,
+        "text": "是曾经拥有过全世界的绚烂，最后只剩下一地鸡毛的凄凉。",
+        "audio_length": 7,
+        "video_path": "D:/Material/fragment/619.mp4",
+        "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/1.wav"
+    },
+    {
+        "id": 2,
+        "text": "这种落差，比从未拥有过更让人绝望。",
+        "audio_length": 5,
+        "video_path": "D:/Material/fragment/801.mp4",
+        "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/2.wav"
+    }
+    ]"""
+    poetry_draft = autoCut(title=title, list=list, bgm="落.mp3", bgv="温柔细闪.mp4")
+    poetry_draft.general_draft()

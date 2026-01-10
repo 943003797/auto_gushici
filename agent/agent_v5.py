@@ -3,6 +3,8 @@ import math
 from mutagen import File
 from mutagen.wave import WAVE
 from tts.cosyvoice.tts import TTS
+from BigModel.llm import LLM
+from Vector.main import VectorDB
 
 def get_audio_duration(audio_path):
     """
@@ -40,17 +42,49 @@ def get_audio_duration(audio_path):
         print(f"获取音频时长失败: {e}")
         return None
 
-def match_video(text: str) -> str:
+def match_video(text: str, audio_length: int) -> str:
     """
     根据文案内容匹配对应的视频文件路径
     
     Args:
         text (str): 输入的文案内容
+        audio_length (int): 音频文件的时长（秒）
         
     Returns:
         str: 匹配到的视频文件路径，若未匹配到则返回空字符串
     """
-    return "D:/Material/fragment/1.mp4"
+    try:
+        llm = LLM()
+        tag = llm.get_tag(text)
+        print(f"[DEBUG] 获取到的标签: {tag}")
+
+        vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video")
+        where = {"duration": audio_length}
+        results = vector_db.search(query_text=tag, n_results=1, where=where)
+        
+        # 如果 results 已经是字典格式
+        if isinstance(results, dict):
+            if results and "metadatas" in results and results["metadatas"]:
+                file_name = results["metadatas"][0][0]["fileName"]
+                print(f"[DEBUG] 匹配到视频文件: {file_name}")
+                return file_name
+        # 如果 results 是字符串格式，尝试解析
+        elif isinstance(results, str):
+            try:
+                results_dict = json.loads(results)
+                if results_dict and "metadatas" in results_dict and results_dict["metadatas"]:
+                    file_name = results_dict["metadatas"][0][0]["fileName"]
+                    print(f"[DEBUG] 匹配到视频文件: {file_name}")
+                    return file_name
+            except json.JSONDecodeError:
+                print(f"[ERROR] 解析搜索结果时出错: {results}")
+        
+        print("[DEBUG] 未找到匹配的视频文件")
+        return ""
+        
+    except Exception as e:
+        print(f"[ERROR] 匹配视频时出错: {e}")
+        return ""
 
 def format_content(content):
     """

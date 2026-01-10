@@ -1,6 +1,7 @@
 import gradio as gr
 from agent.agent_v5 import format_content, process_complete_workflow, match_video
 from pathlib import Path
+from autocut.cut_v5 import autoCut
 import os
 import json
 
@@ -189,6 +190,36 @@ def create_interface():
                         elem_id="video_button",
                         scale=1  # 按钮占据1/4的宽度
                     )
+        general_button = gr.Button(
+            value="🚀 开始生成",
+            variant="primary",
+            size="md",
+            elem_id="general_button"
+        )
+
+        result_text = gr.Textbox(
+            label="生成结果",
+            lines=12,
+            info="生成的视频和音频将显示在这里",
+            interactive=False,
+            elem_id="result_text"
+        )
+
+        # 生成草稿
+        def general_draft(topic_input, output_text):
+            # 调用草稿生成函数
+            cut = autoCut(title=topic_input, list=output_text)
+            result = cut.general_draft()
+            if result:
+                return 'success'
+            else:
+                return "生成失败"
+
+        general_button.click(
+            fn=general_draft,
+            inputs=[topic_input, output_text],
+            outputs=[result_text]
+        )
         
         # 绑定按钮点击事件
         format_button.click(
@@ -199,8 +230,6 @@ def create_interface():
         
         # 绑定音频选择变化事件
         def update_tts_audio_preview(choice, topic_name, output_data):
-            print(f"[DEBUG] 选择: {choice}, 主题: {topic_name}, 输出数据存在: {bool(output_data)}")
-            
             # 如果是"请选择"，直接返回 None
             if choice == "请选择":
                 return None, None
@@ -214,39 +243,30 @@ def create_interface():
                     # 解析JSON数据
                     import json
                     data = json.loads(output_data)
-                    print(f"[DEBUG] JSON数据解析成功，包含 {len(data)} 个项目")
-                    print(f"[DEBUG] 第一个项目示例: {data[0] if data else 'None'}")
                     
                     # 从choice中提取句子ID
                     if "句子" in choice:
                         sentence_id = int(choice.split("句子")[1].split(":")[0])
-                        print(f"[DEBUG] 提取的句子ID: {sentence_id}")
                         
                         # 查找对应的audio_patch和video_path
                         for item in data:
                             if item.get('id') == sentence_id:
-                                print(f"[DEBUG] 找到匹配的项目ID: {item.get('id')}")
                                 # 获取音频路径 - 直接使用audio_patch的值
                                 audio_patch = item.get('audio_patch', '')
-                                print(f"[DEBUG] 原始audio_patch: '{audio_patch}'")
                                 
                                 # 构建完整音频路径
                                 if audio_patch:
                                     audio_path = audio_patch
-                                    print(f"[DEBUG] 设置音频路径: {audio_path}")
                                 
                                 # 获取视频路径
                                 video_patch = item.get('video_path', '')
-                                print(f"[DEBUG] 原始video_path: '{video_patch}'")
                                 if video_patch:
                                     video_path = video_patch
-                                    print(f"[DEBUG] 设置视频路径: {video_path}")
                                 break
                 except Exception as e:
                     print(f"[ERROR] 解析JSON数据时出错: {e}")
                     print(f"[DEBUG] 原始输出数据: {output_data[:500]}...")
             
-            print(f"[DEBUG] 最终结果 - 选择: {choice}, 音频路径: {audio_path}, 视频路径: {video_path}")
             return audio_path, video_path
         
         tts_dropdown.change(
@@ -362,10 +382,10 @@ def create_interface():
                         for item in data:
                             if item.get('id') == sentence_id:
                                 text = item.get('text', '')
+                                audio_length = item.get('audio_length', '')
                                 # 调用match_video获取视频路径
                                 if text:
-                                    video_path = match_video(text)
-                                    print(f"[DEBUG] 匹配视频 - 文案: {text[:30]}..., 视频路径: {video_path}")
+                                    video_path = f"{os.getenv('VIDEO_HOUSE')}{match_video(text=text, audio_length=audio_length)}"
                                     
                                     # 更新video_path
                                     item['video_path'] = video_path if video_path else ''
@@ -376,7 +396,6 @@ def create_interface():
                                     # 更新下拉框的值为当前选择的句子
                                     choice_value = choice
                                     
-                                    print(f"[DEBUG] 更新后的JSON数据: {output_data[:200]}...")
                                     break
                 except Exception as e:
                     print(f"[ERROR] 匹配视频时出错: {e}")
@@ -394,7 +413,7 @@ def create_interface():
             examples=[
                 ["是曾经拥有过全世界的绚烂，最后只剩下一地鸡毛的凄凉。\n这种落差，比从未拥有过更让人绝望。", "李清照词赏析"],
                 ["开篇连用14个叠字，寻寻觅觅，冷冷清清，凄凄惨惨戚戚。\n看似只是文字的堆叠，实则是一个女人在精神崩溃边缘的低声呢喃。", "声声慢解析"],
-                ["它被公认为宋词里的\"万古愁心之祖\"。\n全篇没有一个\"泪\"字，却让无数人在读完后感到窒息般的压抑。", "宋词经典赏析"]
+                ["它被公认为宋词里的万古愁心之祖", "宋词经典赏析"]
             ],
             inputs=[input_text, topic_input],
             label="示例文案"

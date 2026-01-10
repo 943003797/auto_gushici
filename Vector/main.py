@@ -1,4 +1,4 @@
-import os
+import os, json
 import chromadb
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -117,10 +117,12 @@ class VectorDB:
             搜索结果字典
         """
         query_embedding = self._get_embeddings([query_text])[0]
-        
+        print(f"查询query_text: {query_text}")
+        print(f"查询where: {where}")
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=n_results
+            n_results=n_results,
+            where=where
         )
         
         return results
@@ -195,5 +197,7 @@ if __name__ == "__main__":
 
     # vector_db.add_documents(['毛笔'], ['1'], metadatas=[{"emotion": "平静"}])
 
-    results = vector_db.search(query_text='平静|书房|独处|研墨|留白艺术', n_results=1)
+    results = vector_db.search(query_text='忧郁|江海|独处|诵读|时间流逝', n_results=1, where={"duration": 4})
+    # results = json.loads(results)  
     print(results)
+    print(results["metadatas"][0][0]["fileName"])
