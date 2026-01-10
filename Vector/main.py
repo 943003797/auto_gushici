@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 
 class VectorDB:
-    def __init__(self, collection_name: str = "my_collection", db_path: str = "./Vector/db/video_db"):
+    def __init__(self, collection_name: str = "video", db_path: str = "./Vector/db/video"):
         """
         初始化向量数据库
         
@@ -59,7 +59,7 @@ class VectorDB:
             向量嵌入列表
         """
         embeddings = []
-        print(f"正在为 {len(texts)} 个文本生成向量嵌入...")
+        print(f"正在为 {texts} 生成向量嵌入...")
         
         for text in texts:
             completion = self.openai_client.embeddings.create(
@@ -90,7 +90,6 @@ class VectorDB:
         
         if len(texts) != len(ids):
             raise ValueError("texts和ids的长度必须一致")
-        
         embeddings = self._get_embeddings(texts)
         
         try:
@@ -105,13 +104,14 @@ class VectorDB:
             print(f"添加文档失败: {e}")
             return False
     
-    def search(self, query_text: str, n_results: int = 5) -> Dict[str, Any]:
+    def search(self, query_text: str, n_results: int = 5, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         搜索相似文档
         
         Args:
             query_text: 查询文本
             n_results: 返回结果数量
+            where: 过滤条件（可选）
             
         Returns:
             搜索结果字典
@@ -183,7 +183,7 @@ class VectorDB:
 
 if __name__ == "__main__":
     # 初始化向量数据库
-    vector_db = VectorDB(collection_name="video_10", db_path="./Vector/db/video")
+    vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video")
     
     # 添加文档
     # documents = ["2"]
@@ -193,8 +193,7 @@ if __name__ == "__main__":
     #     print("文档添加成功")
 
 
-    # # vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video_db")
-    # # # vector_db.add_documents(['毛笔'], ['1'])
+    # vector_db.add_documents(['毛笔'], ['1'], metadatas=[{"emotion": "平静"}])
 
-    results = vector_db.search('一棵挂满红色祈福布条的枯树前', n_results=1)
+    results = vector_db.search(query_text='平静|书房|独处|研墨|留白艺术', n_results=1)
     print(results)
