@@ -101,13 +101,13 @@ class VideoToVectorProcessor:
                     success, message = future.result()
                     if success:
                         successful_count += 1
-                        self.logger.info(f"✓ {message}")
+                        self.logger.info(f"{message}")
                     else:
                         failed_count += 1
-                        self.logger.warning(f"✗ {message}")
+                        self.logger.warning(f"{message}")
                 except Exception as e:
                     failed_count += 1
-                    self.logger.error(f"✗ 处理文件 {file_index}.mp4 时发生未捕获异常: {str(e)}")
+                    self.logger.error(f"处理文件 {file_index}.mp4 时发生未捕获异常: {str(e)}")
         
         # 输出统计结果
         self.logger.info(f"处理完成! 成功: {successful_count}, 失败: {failed_count}, 总计: {len(video_files)}")
