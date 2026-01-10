@@ -1,4 +1,5 @@
 import base64,os,json
+from typing import Tuple
 from zai import ZhipuAiClient
 from dotenv import load_dotenv
 import cv2
@@ -41,6 +42,23 @@ class video:
         except Exception as e:
             print(f"获取视频时长失败: {e}")
             return None
+    
+    def get_video_resolution(self, video_path: str) -> Tuple[int, int]:
+        """获取视频分辨率，返回(宽度, 高度)"""
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                print(f"无法打开视频文件: {video_path}")
+                return None, None
+            
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            
+            cap.release()
+            return width, height
+        except Exception as e:
+            print(f"获取视频分辨率失败: {e}")
+            return None, None
 
     def get_video_tag(self, video_path: str):
         with open(video_path, "rb") as img_file:

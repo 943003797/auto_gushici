@@ -458,4 +458,4 @@ def create_interface():
 
 if __name__ == "__main__":
     demo = create_interface()
-    demo.launch(server_port=9005, allowed_paths=["D:/Material/fragment"])
+    demo.launch(server_port=9005, allowed_paths=["D:/Material/video"])
