@@ -190,6 +190,24 @@ def create_interface():
                         elem_id="video_button",
                         scale=1  # 按钮占据1/4的宽度
                     )
+                
+                # 背景音乐选择器
+                bgm_dropdown = gr.Dropdown(
+                    choices=["无"] + [f for f in os.listdir('material/bgm') if f.endswith('.mp3')],
+                    label="🎵 背景音乐",
+                    value="无",
+                    info="选择背景音乐",
+                    interactive=True,
+                    elem_id="bgm_dropdown"
+                )
+                
+                # 背景音乐播放器
+                bgm_audio_player = gr.Audio(
+                    label="背景音乐预览",
+                    type="filepath",
+                    interactive=False,
+                    elem_id="bgm_audio_player"
+                )
         general_button = gr.Button(
             value="🚀 开始生成",
             variant="primary",
@@ -206,18 +224,20 @@ def create_interface():
         )
 
         # 生成草稿
-        def general_draft(topic_input, output_text):
+        def general_draft(topic_input, output_text, bgm_name):
             # 调用草稿生成函数
-            cut = autoCut(title=topic_input, list=output_text)
+            bgm_file = bgm_name if bgm_name and bgm_name != "无" else ""
+            cut = autoCut(title=topic_input, list=output_text, bgm=bgm_file)
             result = cut.general_draft()
             if result:
-                return 'success'
+                bgm_display = bgm_name.replace('.mp3', '') if bgm_name and bgm_name != "无" else "无"
+                return f'✅ 草稿生成成功！\n背景音乐: {bgm_display}'
             else:
                 return "生成失败"
 
         general_button.click(
             fn=general_draft,
-            inputs=[topic_input, output_text],
+            inputs=[topic_input, output_text, bgm_dropdown],
             outputs=[result_text]
         )
         
@@ -360,6 +380,21 @@ def create_interface():
             outputs=[tts_dropdown, output_text]
         )
 
+        # 背景音乐选择器变化时直接更新播放器
+        def update_bgm_player(bgm_name):
+            if bgm_name == "无":
+                return None
+            bgm_path = f"material/bgm/{bgm_name}"
+            if os.path.exists(bgm_path):
+                return bgm_path
+            return None
+        
+        bgm_dropdown.change(
+            fn=update_bgm_player,
+            inputs=[bgm_dropdown],
+            outputs=[bgm_audio_player]
+        )
+        
         # 绑定视频按钮点击事件
         def match_video_for_selection(choice, topic_name, output_data):
             # 如果是"请选择"，直接返回
