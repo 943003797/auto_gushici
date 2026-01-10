@@ -14,7 +14,7 @@ SOURCE_VIDEO_FOLDER = r"D:/Material/video_tmp"
 DEST_VIDEO_FOLDER = r"D:/Material/video"
 
 # 每个文件夹存放的视频数量
-VIDEOS_PER_FOLDER = 3000
+VIDEOS_PER_FOLDER = 2000
 
 class VideoToVectorProcessor:
     def __init__(self, max_workers: int = None):
