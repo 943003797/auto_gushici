@@ -163,7 +163,7 @@ class VideoToVectorProcessor:
             tag["fileName"] = f"{os.path.basename(folder_path)}/{file_name}"
             
             # 调用添加文档方法
-            if self.vector_db.add_documents(texts=[tag["tags"]], metadatas=[tag]):
+            if self.vector_db.add_documents(fileNamePath=[file_path], metadatas=[tag]):
                 # 移动视频文件到目标目录
                 move_success, move_message = self._move_video(file_path)
                 if move_success:

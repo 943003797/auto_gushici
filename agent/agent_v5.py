@@ -2,7 +2,7 @@ import json, os, shutil
 import math
 from mutagen import File
 from mutagen.wave import WAVE
-from tts.cosyvoice.tts import TTS
+from tts.minimax.tts import TTS
 from BigModel.llm import LLM
 from Vector.main import VectorDB
 
@@ -59,9 +59,9 @@ def match_video(text: str, audio_length: int) -> str:
         print(f"[DEBUG] 获取到的标签: {tag}")
 
         vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video")
-        where = {"duration": audio_length}
+        # where = {"duration": audio_length}
+        where = {"duration": {"$gte": audio_length }}
         results = vector_db.search(query_text=tag, n_results=1, where=where)
-        
         # 如果 results 已经是字典格式
         if isinstance(results, dict):
             if results and "metadatas" in results and results["metadatas"]:
@@ -182,7 +182,7 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
         for item in structured_data:
             sentence_id = item['id']
             text = item['text']
-            audio_filename = f"{sentence_id}.wav"  # 生成音频文件名，如001.wav
+            audio_filename = f"{sentence_id}.mp3"  # 生成音频文件名，如001.wav
             
             try:
                 # 生成音频文件
@@ -268,6 +268,7 @@ def process_complete_workflow(content, topic_name, voice_id="风吟"):
         
         # 3. 生成配音
         voice_result = generate_voice_for_content(formatted_json_str, topic_name, voice_id)
+        print(f"voice_result: {voice_result}")
         
         return {
             "status": "success",

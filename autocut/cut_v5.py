@@ -26,8 +26,10 @@ class autoCut():
         self.script.add_track(draft.TrackType.audio, 'WENAN_AUDIO')
         self.script.add_track(draft.TrackType.audio, 'TTS')
         self.script.add_track(draft.TrackType.sticker, 'STK')
-        self.script.add_track(draft.TrackType.video, 'BGV', mute= True, relative_index=8)
+        self.script.add_track(draft.TrackType.video, 'BGV', mute= True, relative_index=0)
         self.script.add_track(draft.TrackType.video, 'BGVC', mute= True, relative_index=0)
+        self.script.add_track(draft.TrackType.video, 'BDTOP', mute= True, relative_index=1)
+        self.script.add_track(draft.TrackType.video, 'BDBOT', mute= True, relative_index=1)
         self.script.add_track(draft.TrackType.text, 'WENAN_TEXT_1')
         self.script.add_track(draft.TrackType.text, 'WENAN_TEXT_2')
         self.script.add_track(draft.TrackType.text, 'T0')
@@ -56,10 +58,34 @@ class autoCut():
                                     font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
                                     style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
                                     border=draft.TextBorder(alpha=0.2,color=(0, 0, 0)),
-                                    clip_settings=draft.ClipSettings(transform_x=-0.85,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                                    clip_settings=draft.ClipSettings(transform_x=-0.765,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
         TextSegment.add_animation(TextIntro.冰雪飘动, 1500000)
         TextSegment.add_animation(TextOutro.渐隐, 500000)
         self.script.add_segment(TextSegment, 'SY')
+
+        #边框TOP
+        video_material = draft.VideoMaterial("./material/border/border.png")
+        video_duration = video_material.duration
+        self.script.add_material(video_material)
+        video_segment = draft.VideoSegment(material = video_material,
+                                                        target_timerange  = trange(0, self.audioNowTime),
+                                                        volume=0,
+                                                        clip_settings=draft.ClipSettings(transform_y=0.917))
+        video_segment.add_animation(IntroType.渐显, 300000)
+        video_segment.add_animation(OutroType.渐隐, 300000)
+        self.script.add_segment(video_segment, 'BDTOP')
+
+        #边框BOT
+        video_material = draft.VideoMaterial("./material/border/border.png")
+        video_duration = video_material.duration
+        self.script.add_material(video_material)
+        video_segment = draft.VideoSegment(material = video_material,
+                                                        target_timerange  = trange(0, self.audioNowTime),
+                                                        volume=0,
+                                                        clip_settings=draft.ClipSettings(transform_y=-0.917, flip_vertical = True))
+        video_segment.add_animation(IntroType.渐显, 300000)
+        video_segment.add_animation(OutroType.渐隐, 300000)
+        self.script.add_segment(video_segment, 'BDBOT')
 
     def addItem(self) -> str:
         for item in self.list:
@@ -91,7 +117,7 @@ class autoCut():
                                         font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
                                         style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
                                         border=draft.TextBorder(color=(0, 0, 0)),
-                                        clip_settings=draft.ClipSettings(transform_y=-0.9, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                                        clip_settings=draft.ClipSettings(transform_y=-0.92, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
                 TextSegment.add_animation(TextIntro.渐显, 500000)
                 TextSegment.add_animation(TextOutro.渐隐, 500000)
                 self.script.add_segment(TextSegment, 'ZZ')
@@ -118,20 +144,76 @@ class autoCut():
 if __name__ == '__main__':
     title = "李清照词赏析"
     list = """[
-    {
-        "id": 1,
-        "text": "是曾经拥有过全世界的绚烂，最后只剩下一地鸡毛的凄凉。",
-        "audio_length": 7,
-        "video_path": "D:/Material/fragment/619.mp4",
-        "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/1.wav"
-    },
-    {
-        "id": 2,
-        "text": "这种落差，比从未拥有过更让人绝望。",
-        "audio_length": 5,
-        "video_path": "D:/Material/fragment/801.mp4",
-        "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/2.wav"
-    }
-    ]"""
+  {
+    "id": 1,
+    "text": "它被公认为宋词里的“万古愁心之祖”。",
+    "audio_length": 4,
+    "video_path": "D:/Material/video/1/3.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/1.mp3"
+  },
+  {
+    "id": 2,
+    "text": "全篇没有一个“泪”字，却让无数人在读完后感到窒息般的压抑。",
+    "audio_length": 7,
+    "video_path": "D:/Material/video/1/17.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/2.mp3"
+  },
+  {
+    "id": 3,
+    "text": "开篇连用14个叠字，寻寻觅觅，冷冷清清，凄凄惨惨戚戚。",
+    "audio_length": 8,
+    "video_path": "D:/Material/video/1/620.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/3.mp3"
+  },
+  {
+    "id": 4,
+    "text": "看似只是文字的堆叠，实则是一个女人在精神崩溃边缘的低声呢喃。",
+    "audio_length": 7,
+    "video_path": "D:/Material/video/1/9.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/4.mp3"
+  },
+  {
+    "id": 5,
+    "text": "它就是李清照的绝笔之一——《声声慢》。",
+    "audio_length": 4,
+    "video_path": "D:/Material/video/1/36.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/5.mp3"
+  },
+  {
+    "id": 6,
+    "text": "如果说苏轼的悼亡是十年后的深沉回望，那李清照的这首词，就是正在淌血的新鲜伤口。",
+    "audio_length": 10,
+    "video_path": "D:/Material/video/1/317.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/6.mp3"
+  },
+  {
+    "id": 7,
+    "text": "我们常以为，孤独是此时此刻没人陪伴。",
+    "audio_length": 5,
+    "video_path": "D:/Material/video/1/422.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/7.mp3"
+  },
+  {
+    "id": 8,
+    "text": "但李清照告诉我们，真正的孤独，是满屋子都是往事的影子，却再也抓不住那个能回应你的人。",
+    "audio_length": 10,
+    "video_path": "D:/Material/video/1/61.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/8.mp3"
+  },
+  {
+    "id": 9,
+    "text": "是曾经拥有过全世界的绚烂，最后只剩下一地鸡毛的凄凉。",
+    "audio_length": 6,
+    "video_path": "D:/Material/video/1/335.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/9.mp3"
+  },
+  {
+    "id": 10,
+    "text": "这种落差，比从未拥有过更让人绝望。",
+    "audio_length": 5,
+    "video_path": "D:/Material/video/1/615.mp4",
+    "audio_patch": "draft/JianyingPro Drafts/李清照词赏析/Resources/audioAlg/10.mp3"
+  }
+]"""
     poetry_draft = autoCut(title=title, list=list, bgm="落.mp3", bgv="温柔细闪.mp4")
     poetry_draft.general_draft()

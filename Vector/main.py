@@ -3,6 +3,7 @@ import chromadb
 from openai import OpenAI
 from dotenv import load_dotenv
 from typing import List, Optional, Dict, Any
+from AliModel.video import video_embedding
 import uuid
 
 class VectorDB:
@@ -23,7 +24,7 @@ class VectorDB:
         self.openai_client = None
         
         self._init_chromadb()
-        self._init_openai_client()
+        # self._init_openai_client()
     
     def _init_chromadb(self):
         """初始化ChromaDB客户端和集合"""
@@ -62,17 +63,14 @@ class VectorDB:
         print(f"正在为 {texts} 生成向量嵌入...")
         
         for text in texts:
-            completion = self.openai_client.embeddings.create(
-                model="text-embedding-v4",
-                input=text
-            )
-            embedding_vector = completion.data[0].embedding
+            ve = video_embedding()
+            embedding_vector = ve.get_embedding_text(text=text) 
             embeddings.append(embedding_vector)
         
         print("向量嵌入生成完成")
         return embeddings
     
-    def add_documents(self, texts: List[str], ids: Optional[List[str]] = None, 
+    def add_documents(self, fileNamePath: List[str], ids: Optional[List[str]] = None, 
                      metadatas: Optional[List[Dict[str, Any]]] = None) -> bool:
         """
         添加文档到向量数据库
@@ -86,17 +84,17 @@ class VectorDB:
             添加是否成功
         """
         if ids is None:
-            ids = [str(uuid.uuid4()) for _ in texts]
-        
-        if len(texts) != len(ids):
+            ids = [str(uuid.uuid4()) for _ in fileNamePath]
+        if len(fileNamePath) != len(ids):
             raise ValueError("texts和ids的长度必须一致")
-        embeddings = self._get_embeddings(texts)
-        
+        ve = video_embedding()
+        embedding = ve.get_embedding(local_file=fileNamePath[0])
+        print(f"ids---: {ids}")
+        print(f"embedding---: {embedding}")
         try:
             self.collection.add(
                 ids=ids,
-                embeddings=embeddings,
-                documents=texts,
+                embeddings=embedding,
                 metadatas=metadatas
             )
             return True
@@ -117,14 +115,11 @@ class VectorDB:
             搜索结果字典
         """
         query_embedding = self._get_embeddings([query_text])[0]
-        print(f"查询query_text: {query_text}")
-        print(f"查询where: {where}")
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
             where=where
         )
-        
         return results
     
     def get_collection_info(self) -> Dict[str, Any]:
@@ -197,7 +192,7 @@ if __name__ == "__main__":
 
     # vector_db.add_documents(['毛笔'], ['1'], metadatas=[{"emotion": "平静"}])
 
-    results = vector_db.search(query_text='忧郁|江海|独处|诵读|时间流逝', n_results=1, where={"duration": 4})
+    results = vector_db.search(query_text='书画', n_results=1, where={"duration": 4})
     # results = json.loads(results)  
     print(results)
     print(results["metadatas"][0][0]["fileName"])
