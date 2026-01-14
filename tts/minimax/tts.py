@@ -14,7 +14,7 @@ class TTS:
             out_path (str): 默认输出目录，可在调用 textToAudio 时单独指定。
         """
         voice_id_map = {
-            "风吟磁性": "ttv-voice-2026011220082326-UUtKNfyf",
+            "风吟磁性": "ttv-voice-2026010715380426-UkAjnNgo",
         }
         self.voice_id = voice_id_map.get(voice_id, voice_id)
         
