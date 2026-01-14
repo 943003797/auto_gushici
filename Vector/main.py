@@ -88,7 +88,7 @@ class VectorDB:
         if len(fileNamePath) != len(ids):
             raise ValueError("texts和ids的长度必须一致")
         ve = video_embedding()
-        embedding = ve.get_embedding(local_file=fileNamePath[0])
+        embedding = ve.get_embedding_video(local_file=fileNamePath[0])
         print(f"ids---: {ids}")
         print(f"embedding---: {embedding}")
         try:
@@ -115,11 +115,13 @@ class VectorDB:
             搜索结果字典
         """
         query_embedding = self._get_embeddings([query_text])[0]
+        print(f"query_embedding---: {query_embedding}")
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
             where=where
         )
+        print(f"results---: {results}")
         return results
     
     def get_collection_info(self) -> Dict[str, Any]:
