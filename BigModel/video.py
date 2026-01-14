@@ -78,23 +78,11 @@ class video:
                         {
                             "type": "text",
                             "text": """
-                            给出视频的情绪标签（emotion）、场景标签（scene）、人物关系（person_relation）、互动标签（interaction）、抽象概念标签（abstract_concept）。
-                            参考标签（必须从参考标签中分别选择出唯一一个权重最高的标签）：
-                            情绪标签（emotion）： 平静|忧郁|豪迈|欢快|严肃|孤独|惆怅|温馨|沉重|激动|惊讶|思念
-                            场景标签（scene）： 苍山|江海|大漠|云海|雨天|雪天|枯树|宫廷|院子|古道|古寺|书房|灯火|树林|市井|码头|田园
-                            人物关系（person_relation）： 独处|好友|师徒|君臣|眷侣|路人
-                            互动标签（interaction）： 书写|绘画|研墨|诵读|翻阅|对弈|抚琴|点香|对酌|独饮|行礼|相迎|赠别|挥手|远眺|观望|信步|游历|垂钓|采摘|耕作
-                            抽象概念标签（abstract_concept）（提取时注意，视频注意视频是无声的）： 情感共鸣|时间流逝|留白艺术
-                            tags： 合并情绪标签（emotion）、场景标签（scene）、人物关系（person_relation）、互动标签（interaction）、抽象概念标签（abstract_concept），用|分隔
-                            按JSON格式输出(只输出JSON)：
+                            从这个视频中，截取2到7秒最有意义的视频片段,输出用于分割的开始时间和结束时间（单位：秒）
+                            按这个JSON格式输出：
                             {
-                                "emotion": "标签",
-                                "scene": "标签",
-                                "person_relation": "关系",
-                                "interaction": "标签",
-                                "abstract_concept": "标签",
-                                "tags": "标签",
-                                "content": "以情绪标签、场景标签、人物关系、互动标签、抽象概念标签做参考,简短描述视频的主要内容"
+                                "start": "",
+                                "end": ""
                             }
                             """
                         }
@@ -114,7 +102,7 @@ class video:
                 json_str = match.group(0)
                 parsed = json.loads(json_str)
                 # 校验必须字段及类型
-                required_keys = {'emotion', 'scene', 'person_relation', 'interaction', 'abstract_concept', 'tags', 'content'}
+                required_keys = {'start', 'end'}
                 if not isinstance(parsed, dict) or not required_keys.issubset(parsed):
                     # 结构不符，重新调用本函数
                     return self.get_video_tag(video_path)
@@ -129,11 +117,11 @@ class video:
         return False
 
 if __name__ == "__main__":
-    video = video()
+    v = video()
     # 测试获取视频时长
-    duration = video.get_video_duration("D:/Material/video/1/367.mp4")
-    print(f"视频时长: {duration} 秒")
+    # duration = video.get_video_duration("D:/Material/video_tmp/161.mp4")
+    # print(f"视频时长: {duration} 秒")
     
     # 测试获取视频标签
-    # tag = video.get_video_tag("D:/Material/fragment/60.mp4")
-    # print(f"视频标签: {tag}")
+    tag = v.get_video_tag("D:/Material/video_tmp/3.mp4")
+    print(f"视频标签: {tag}")
