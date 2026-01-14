@@ -2,7 +2,7 @@ import json, os, shutil
 import math
 from mutagen import File
 from mutagen.wave import WAVE
-from tts.minimax.tts import TTS
+from tts.cosyvoice.tts import TTS
 from BigModel.llm import LLM
 from Vector.main import VectorDB
 
@@ -54,14 +54,18 @@ def match_video(text: str, audio_length: int) -> str:
         str: 匹配到的视频文件路径，若未匹配到则返回空字符串
     """
     try:
-        llm = LLM()
-        tag = llm.get_tag(text)
-        print(f"[DEBUG] 获取到的标签: {tag}")
+        # llm = LLM()
+        # tag = llm.get_tag(text)
+        # print(f"[DEBUG] 获取到的标签: {tag}")
 
         vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video")
-        # where = {"duration": audio_length}
-        where = {"duration": {"$gte": audio_length }}
-        results = vector_db.search(query_text=tag, n_results=1, where=where)
+        where = {"duration": audio_length}
+        print(f"[DEBUG] 匹配视频时长: {audio_length}")
+        # where = {"$and": [
+        #     {"duration": {"$gte": audio_length }},
+        #     {"duration": {"$lte": audio_length + 1 }}
+        # ]}
+        results = vector_db.search(query_text=text, n_results=1, where=where)
         # 如果 results 已经是字典格式
         if isinstance(results, dict):
             if results and "metadatas" in results and results["metadatas"]:
@@ -186,6 +190,7 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
             
             try:
                 # 生成音频文件
+                print(f"尝试生成音频文件: {text}")
                 audio_path = os.path.join(target_dir, audio_filename)
                 success = tts.textToAudio(text=text, out_path=audio_path)
                 
@@ -212,7 +217,6 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
                     "status": "error",
                     "error": str(e)
                 })
-        
         # 更新结构化数据中的audio_length、video_path和audio_patch
         for result in results:
             for item in structured_data:
@@ -268,7 +272,6 @@ def process_complete_workflow(content, topic_name, voice_id="风吟"):
         
         # 3. 生成配音
         voice_result = generate_voice_for_content(formatted_json_str, topic_name, voice_id)
-        print(f"voice_result: {voice_result}")
         
         return {
             "status": "success",

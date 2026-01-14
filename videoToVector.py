@@ -156,8 +156,8 @@ class VideoToVectorProcessor:
             tag = self.video_processor.get_video_tag(file_path)
             
             # 拼装metadata
-            tag["duration"] = duration
-            
+            tag["duration"] = str(duration)
+            print(f"视频时长: {duration} 秒")
             # 计算目标路径
             folder_path, file_name = self._get_destination_path()
             tag["fileName"] = f"{os.path.basename(folder_path)}/{file_name}"

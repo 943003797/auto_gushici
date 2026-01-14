@@ -36,7 +36,6 @@ class video:
             
             # 计算时长（秒）
             duration = int(total_frames / fps)
-            
             cap.release()
             return duration
         except Exception as e:
@@ -132,9 +131,9 @@ class video:
 if __name__ == "__main__":
     video = video()
     # 测试获取视频时长
-    duration = video.get_video_duration("D:/Material/fragment/60.mp4")
+    duration = video.get_video_duration("D:/Material/video/1/367.mp4")
     print(f"视频时长: {duration} 秒")
     
     # 测试获取视频标签
-    tag = video.get_video_tag("D:/Material/fragment/60.mp4")
-    print(f"视频标签: {tag}")
+    # tag = video.get_video_tag("D:/Material/fragment/60.mp4")
+    # print(f"视频标签: {tag}")

@@ -91,6 +91,7 @@ class VectorDB:
         embedding = ve.get_embedding_video(local_file=fileNamePath[0])
         print(f"ids---: {ids}")
         print(f"embedding---: {embedding}")
+        exit('end');
         try:
             self.collection.add(
                 ids=ids,
@@ -115,13 +116,12 @@ class VectorDB:
             搜索结果字典
         """
         query_embedding = self._get_embeddings([query_text])[0]
-        print(f"query_embedding---: {query_embedding}")
+        print(f"匹配视频: {query_text}")
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
             where=where
         )
-        print(f"results---: {results}")
         return results
     
     def get_collection_info(self) -> Dict[str, Any]:

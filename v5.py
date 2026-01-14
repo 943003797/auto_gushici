@@ -308,23 +308,11 @@ def create_interface():
                 return
             
             try:
-                # 实时更新配音状态
-                status_messages = [
-                    "正在准备配音...",
-                    "正在复制项目模板...",
-                    "正在生成语音文件...",
-                    "正在优化音频质量...",
-                    "配音生成完成！"
-                ]
-                
-                for message in status_messages:
-                    time.sleep(0.5)  # 模拟处理时间
-                    yield (None, None)
-                
                 # 执行完整的配音工作流程
                 result = process_complete_workflow(content, topic_name)
                 
                 if result.get("status") == "success":
+                    print(f"[INFO] 配音完成")
                     # 获取更新后的结构化数据并格式化为JSON字符串
                     updated_data = result.get('voice_result', {}).get('updated_data', [])
                     if updated_data:

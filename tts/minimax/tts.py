@@ -55,6 +55,7 @@ class TTS:
         # 轮询任务状态，每秒调用一次 get_general_status
         while True:
             status = self.get_general_status(task_id=task_id)
+            print(f"当前任务状态: {status}")
             if status is True:          # 任务成功
                 break
             time.sleep(1)                 # 等待 1 秒后继续查询
@@ -64,8 +65,8 @@ class TTS:
         # 任务成功后，获取音频文件数据
         response = requests.get(url, headers=headers)
         response = json.loads(response.text)
-        print(response["file"])
-        print(response["file"]["download_url"])
+        # print(response["file"])
+        # print(response["file"]["download_url"])
         fileUrl = response["file"]["download_url"]
         audioData = requests.get(fileUrl).content
         try:
