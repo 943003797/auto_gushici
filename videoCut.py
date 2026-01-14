@@ -104,7 +104,7 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
         result = subprocess.run(cmd, check=True)
         # 大模型二次裁剪
         print(f"duration：{duration}")
-        if(duration > 3):
+        if(duration > 7):
             print(f"output_path：{output_path}")
             splitTime = v.get_video_tag(video_path=output_path)
             if splitTime is None:
