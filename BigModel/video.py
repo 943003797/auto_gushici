@@ -92,7 +92,6 @@ class video:
             thinking=self.thinking
         )   
         raw = response.choices[0].message.content if response.choices else False
-        print(raw)
         if not raw:
             return False
         # 使用正则提取最外层{}中的JSON字符串
@@ -101,6 +100,12 @@ class video:
             try:
                 json_str = match.group(0)
                 parsed = json.loads(json_str)
+                # 校验start和end字段值是否为数字
+                if not (parsed.get('start').isdigit() and parsed.get('end').isdigit()):
+                    return self.get_video_tag(video_path)
+                # 校验start到end的时间是否超过7秒
+                if int(parsed['end']) - int(parsed['start']) > 7:
+                    return self.get_video_tag(video_path)
                 # 校验必须字段及类型
                 required_keys = {'start', 'end'}
                 if not isinstance(parsed, dict) or not required_keys.issubset(parsed):

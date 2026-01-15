@@ -72,6 +72,9 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
     start_time = scene[0].get_seconds() + adjust_frames / scene[0].framerate
     end_time = scene[1].get_seconds() - adjust_frames / scene[1].framerate
     duration = end_time - start_time
+    print(f"start_time：{start_time}")
+    print(f"end_time：{end_time}")
+    print(f"duration1：{duration}")
     
     # 使用ffmpeg进行精确切割（优化压缩参数）
     cmd = [
@@ -99,7 +102,6 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
     ]
     
     try:
-        print(f"      执行命令: ffmpeg 处理中...")
         # 不捕获输出，让错误信息直接显示在终端
         result = subprocess.run(cmd, check=True)
         # 大模型二次裁剪
@@ -197,7 +199,6 @@ def remove_audio_from_video(input_path, output_path):
     ]
     
     try:
-        print(f"      正在去除音频: {input_path}")
         result = subprocess.run(cmd, check=True)
         return True, None
     except subprocess.CalledProcessError as e:
@@ -244,7 +245,7 @@ global_scene_counter =  max_num + 1
 
 # Process each video file
 for video_path in mp4_files:
-    print(f"\n正在处理视频: {video_path}")
+    print(f"\n正在处理: {video_path}")
     
     # 分析视频并获取场景列表
     scene_list = split_video_into_scenes(video_path)
@@ -265,19 +266,19 @@ for video_path in mp4_files:
         
         if duration <= max_duration_seconds and duration >= min_duration_seconds:
             filtered_scene_list.append(scene)
-            print(f'    Scene {i+1}: Start {scene[0].get_timecode()} / Frame {scene[0].frame_num}, '
-                  f'End {scene[1].get_timecode()} / Frame {scene[1].frame_num}, '
-                  f'Duration: {duration:.2f}s - INCLUDED')
-        else:
-            print(f'    Scene {i+1}: Start {scene[0].get_timecode()} / Frame {scene[0].frame_num}, '
-                  f'End {scene[1].get_timecode()} / Frame {scene[1].frame_num}, '
-                  f'Duration: {duration:.2f}s - SKIPPED (too long)')
+            # print(f'    Scene {i+1}: Start {scene[0].get_timecode()} / Frame {scene[0].frame_num}, '
+            #       f'End {scene[1].get_timecode()} / Frame {scene[1].frame_num}, '
+            #       f'Duration: {duration:.2f}s - INCLUDED')
+        # else:
+        #     print(f'    Scene {i+1}: Start {scene[0].get_timecode()} / Frame {scene[0].frame_num}, '
+        #           f'End {scene[1].get_timecode()} / Frame {scene[1].frame_num}, '
+        #           f'Duration: {duration:.2f}s - SKIPPED (too long)')
 
     # 简洁的Start和End时间循环输出
     for i, scene in enumerate(filtered_scene_list):
         start_time = scene[0].get_timecode()
         end_time = scene[1].get_timecode()
-        print(f"Scene {i+1}: Start {start_time}, End {end_time}")
+        # print(f"Scene {i+1}: Start {start_time}, End {end_time}")
 
     # 创建输出目录
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -290,13 +291,14 @@ for video_path in mp4_files:
             output_filename = f"{global_scene_counter}.mp4"
             output_path = output_dir / output_filename
             
-            print(f"  处理场景 {i+1}: {scene[0].get_timecode()} - {scene[1].get_timecode()}")
+            print(f"\n")
+            print(f"切割分段:{i+1}")
             
             # 使用精确切割方法
             success, error = precise_cut_with_reencoding(video_path, scene, output_path)
             
             if success:
-                print(f"    已保存: {output_filename}")
+                print(f"分段处理完成: {output_filename}")
                 
                 # 去声音处理
                 temp_path = output_path
@@ -312,7 +314,6 @@ for video_path in mp4_files:
                     # 删除原文件，重命名去声音版本
                     temp_path.unlink()
                     audio_removed_path.rename(final_path)
-                    print(f"    已去除音频: {output_filename}")
                 else:
                     print(f"    音频去除失败: {error_audio}")
                 
