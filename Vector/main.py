@@ -89,9 +89,6 @@ class VectorDB:
             raise ValueError("texts和ids的长度必须一致")
         ve = video_embedding()
         embedding = ve.get_embedding_video(local_file=fileNamePath[0])
-        print(f"ids---: {ids}")
-        print(f"embedding---: {embedding}")
-        exit('end');
         try:
             self.collection.add(
                 ids=ids,
