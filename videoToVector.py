@@ -1,7 +1,7 @@
 import sys, os, argparse, logging, shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from BigModel.video import video
-from Vector.main import VectorDB
+from src.ai_models.big_model.video import video
+from src.video_processing.vector_db.vectorDB import VectorDB
 from typing import List, Tuple
 
 # 控制线程数

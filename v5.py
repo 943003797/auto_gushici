@@ -1,9 +1,68 @@
-import gradio as gr
-from agent.agent_v5 import format_content, process_complete_workflow, match_video
-from pathlib import Path
-from autocut.cut_v5 import autoCut
-import os
-import json
+import gradio as gr, os, json
+
+from src.agent_v5 import format_content, process_complete_workflow, match_video, match_multiple_videos
+from src.autocut.cut_v5 import autoCut
+from src.tts.cosyvoice.tts import TTS
+import time
+
+# 全局变量存储候选视频信息
+candidate_videos_state = {
+    "sentence_id": None,
+    "text": "",
+    "audio_length": "",
+    "videos": []
+}
+
+def regenerate_audio_for_sentence(text: str, sentence_id: int, topic_name: str) -> tuple:
+    """
+    重新生成单个句子的语音
+    
+    Args:
+        text (str): 文本内容
+        sentence_id (int): 句子ID
+        topic_name (str): 主题名称
+        
+    Returns:
+        tuple: (audio_path, audio_length, success_message)
+    """
+    try:
+        print(f"[INFO] 开始重新生成句子 {sentence_id} 的语音: {text}")
+        
+        # 确保目标目录存在
+        target_dir = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg"
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # 初始化TTS
+        tts = TTS("刘涛")
+        
+        # 生成音频文件名
+        audio_filename = f"{sentence_id}.mp3"
+        audio_path = os.path.join(target_dir, audio_filename)
+        
+        # 生成音频文件
+        print(f"尝试生成音频文件: {text}")
+        success = tts.textToAudio(text=text, out_path=audio_path)
+        
+        if success:
+            # 获取音频时长
+            from src.agent_v5 import get_audio_duration
+            audio_length = get_audio_duration(audio_path)
+            if audio_length is None:
+                audio_length = 3  # 默认时长
+                
+            success_message = f"✅ 句子 {sentence_id} 语音重新生成成功！"
+            print(f"[INFO] 句子 {sentence_id} 语音重新生成完成，音频长度: {audio_length}秒")
+            
+            return audio_path, audio_length, success_message
+        else:
+            error_message = f"❌ 句子 {sentence_id} 语音重新生成失败"
+            print(f"[ERROR] 句子 {sentence_id} 语音重新生成失败")
+            return None, None, error_message
+            
+    except Exception as e:
+        error_message = f"❌ 重新生成语音时出错: {str(e)}"
+        print(f"[ERROR] 重新生成语音时出错: {e}")
+        return None, None, error_message
 
 def format_text(content):
     """
@@ -106,7 +165,6 @@ def voice_generation(content, topic_name):
 # 创建Gradio界面
 def create_interface():
     with gr.Blocks(title="文案格式化工具") as demo:
-        gr.Markdown("# 文案格式化工具")
         
         with gr.Row():
             # 左侧：文案格式化功能
@@ -129,7 +187,7 @@ def create_interface():
                 )
                 
                 format_button = gr.Button(
-                    value="格式化文案",
+                    value="格式化文案 ①",
                     variant="primary",
                     size="md",
                     elem_id="format_button"
@@ -137,9 +195,10 @@ def create_interface():
                 
                 output_text = gr.Textbox(
                     label="格式化结果",
-                    lines=12,
+                    lines=11,
+                    max_lines=11,
                     info="格式化后的结构化数据将显示在这里",
-                    interactive=False,
+                    interactive=True,
                     elem_id="output_text"
                 )
             
@@ -149,21 +208,34 @@ def create_interface():
                 
                 # 配音按钮
                 voice_button = gr.Button(
-                    value="🎤 开始配音",
+                    value="🎤 开始配音 ②",
                     variant="secondary",
                     size="md",
                     elem_id="voice_button"
                 )
                 
-                # 文案片段选择
-                tts_dropdown = gr.Dropdown(
-                    choices=["请选择"],
-                    label="文案片段选择",
-                    value="请选择",
-                    info="选择要播放的文案片段",
-                    interactive=True,  # 修复：设置为可交互
-                    elem_id="tts_dropdown"
-                )
+                # 文案片段选择和重新生成按钮
+                with gr.Row():
+                    # 文案片段选择
+                    tts_dropdown = gr.Dropdown(
+                        choices=["请选择"],
+                        label="文案片段选择",
+                        value="请选择",
+                        info="选择要播放的文案片段",
+                        interactive=True,  # 修复：设置为可交互
+                        elem_id="tts_dropdown",
+                        scale=3
+                    )
+                    
+                    # 重新生成按钮
+                    regen_audio_button = gr.Button(
+                        value="🔄 重新生成",
+                        variant="primary",
+                        size="sm",
+                        elem_id="regen_audio_button",
+                        scale=1,
+                        min_width=100
+                    )
                 
                 # 音频播放器
                 tts_audio_player = gr.Audio(
@@ -172,42 +244,101 @@ def create_interface():
                     interactive=True,  # 确保音频播放器是可交互的
                     elem_id="tts_audio_player"
                 )
-                
-                # 视频播放器
-                with gr.Row():
-                    tts_video_player = gr.Video(
-                        label="视频播放器",
-                        interactive=True,
-                        elem_id="tts_video_player",
-                        scale=3  # 视频播放器占据3/4的宽度
-                    )
-                    
-                    # 配视频按钮
-                    video_button = gr.Button(
-                        value="🎥 开始配视频",
-                        variant="secondary",
-                        size="md",
-                        elem_id="video_button",
-                        scale=1  # 按钮占据1/4的宽度
-                    )
-                
-                # 背景音乐选择器
-                bgm_dropdown = gr.Dropdown(
-                    choices=["无"] + [f for f in os.listdir('material/bgm') if f.endswith('.mp3')],
-                    label="🎵 背景音乐",
-                    value="无",
-                    info="选择背景音乐",
+                # 配视频按钮
+                video_button = gr.Button(
+                    value="🎥 开始配视频 ③",
+                    variant="secondary",
+                    size="md",
+                    elem_id="video_button",
+                    scale=1
+                )
+
+                # 保留原有的主背景视频播放器
+                tts_video_player = gr.Video(
+                    label="背景视频",
                     interactive=True,
-                    elem_id="bgm_dropdown"
+                    elem_id="tts_video_player",
+                    scale=3,
+                    height=260
                 )
                 
-                # 背景音乐播放器
-                bgm_audio_player = gr.Audio(
-                    label="背景音乐预览",
-                    type="filepath",
-                    interactive=False,
-                    elem_id="bgm_audio_player"
-                )
+        # 候选视频区域
+        gr.Markdown("### 📹 候选视频选择")
+        
+        # 创建两行5个的候选视频布局
+        candidate_videos = []
+        candidate_buttons = []
+        
+        # 第一行：视频1-5
+        with gr.Row():
+            for i in range(1, 6):
+                with gr.Column(scale=1):
+                    # 视频播放器
+                    video_player = gr.Video(
+                        label=f"候选视频 {i}",
+                        interactive=True,
+                        elem_id=f"candidate_video_{i}",
+                        scale=3
+                    )
+                    candidate_videos.append(video_player)
+                    
+                    # 选择按钮
+                    select_button = gr.Button(
+                        value=f"选择这个视频",
+                        variant="primary",
+                        size="md",
+                        elem_id=f"select_video_{i}",
+                        scale=1
+                    )
+                    candidate_buttons.append(select_button)
+        
+        # 第二行：视频6-10
+        with gr.Row():
+            for i in range(6, 11):
+                with gr.Column(scale=1):
+                    # 视频播放器
+                    video_player = gr.Video(
+                        label=f"候选视频 {i}",
+                        interactive=True,
+                        elem_id=f"candidate_video_{i}",
+                        scale=3
+                    )
+                    candidate_videos.append(video_player)
+                    
+                    # 选择按钮
+                    select_button = gr.Button(
+                        value=f"选择这个视频",
+                        variant="primary",
+                        size="md",
+                        elem_id=f"select_video_{i}",
+                        scale=1
+                    )
+                    candidate_buttons.append(select_button)
+        
+        # 存储候选视频信息的隐藏组件
+        candidate_videos_info = gr.Textbox(
+            label="候选视频信息",
+            visible=False,
+            elem_id="candidate_videos_info",
+            value=""
+        )
+                        # 背景音乐选择器
+        bgm_dropdown = gr.Dropdown(
+            choices=["无"] + [f for f in os.listdir('material/bgm') if f.endswith('.mp3')],
+            label="🎵 背景音乐",
+            value="无",
+            info="选择背景音乐",
+            interactive=True,
+            elem_id="bgm_dropdown"
+        )
+        
+        # 背景音乐播放器
+        bgm_audio_player = gr.Audio(
+            label="背景音乐预览",
+            type="filepath",
+            interactive=False,
+            elem_id="bgm_audio_player"
+        )        
         general_button = gr.Button(
             value="🚀 开始生成",
             variant="primary",
@@ -367,6 +498,72 @@ def create_interface():
             inputs=[input_text, topic_input],
             outputs=[tts_dropdown, output_text]
         )
+        
+        # 重新生成按钮的事件处理
+        def handle_regenerate_audio(selected_choice, topic_name, output_data):
+            """
+            处理重新生成语音的逻辑
+            """
+            if selected_choice == "请选择":
+                return None, "请先选择一个文案片段", output_data
+            
+            try:
+                # 从选择的句子中提取ID
+                if "句子" in selected_choice:
+                    sentence_id = int(selected_choice.split("句子")[1].split(":")[0])
+                    
+                    # 从输出数据中找到对应的文本
+                    if output_data:
+                        data = json.loads(output_data)
+                        for item in data:
+                            if item.get('id') == sentence_id:
+                                text = item.get('text', '')
+                                if not text:
+                                    return None, "未找到对应文本", output_data
+                                
+                                # 重新生成语音，获取音频路径和长度
+                                audio_path, audio_length, message = regenerate_audio_for_sentence(
+                                    text=text, 
+                                    sentence_id=sentence_id, 
+                                    topic_name=topic_name
+                                )
+                                
+                                # 更新输出数据中的audio_patch和audio_length
+                                if audio_path and audio_length is not None:
+                                    item['audio_patch'] = os.path.basename(audio_path)
+                                    item['audio_length'] = audio_length
+                                    # 重新生成JSON字符串
+                                    updated_output_data = json.dumps(data, ensure_ascii=False, indent=2)
+                                    
+                                    print(f"[INFO] 已更新句子 {sentence_id} 的音频信息: 路径={item['audio_patch']}, 长度={audio_length}秒")
+                                    
+                                    return audio_path, f"{message}\n\n✅ 已更新到音频播放器，音频长度: {audio_length}秒", updated_output_data
+                                elif audio_path:
+                                    # 如果只有路径但没有长度，至少更新路径
+                                    item['audio_patch'] = os.path.basename(audio_path)
+                                    # 重新生成JSON字符串
+                                    updated_output_data = json.dumps(data, ensure_ascii=False, indent=2)
+                                    
+                                    return audio_path, f"{message}\n\n✅ 已更新到音频播放器", updated_output_data
+                                else:
+                                    return None, message, output_data
+                                break
+                    else:
+                        return None, "没有可用的格式化数据", output_data
+                else:
+                    return None, "无效的选择格式", output_data
+                    
+            except Exception as e:
+                error_msg = f"重新生成失败: {str(e)}"
+                print(f"[ERROR] {error_msg}")
+                return None, error_msg, output_data
+        
+        # 绑定重新生成按钮事件
+        regen_audio_button.click(
+            fn=handle_regenerate_audio,
+            inputs=[tts_dropdown, topic_input, output_text],
+            outputs=[tts_audio_player, result_text, output_text]
+        )
 
         # 背景音乐选择器变化时直接更新播放器
         def update_bgm_player(bgm_name):
@@ -385,11 +582,17 @@ def create_interface():
         
         # 绑定视频按钮点击事件
         def match_video_for_selection(choice, topic_name, output_data):
+            """
+            处理视频匹配，展示10个候选视频
+            """
             # 如果是"请选择"，直接返回
             if choice == "请选择":
-                return gr.update(value=None), output_data
+                print("[DEBUG] 用户选择了'请选择'，清空候选视频")
+                return tuple([None] * 10 + [output_data, ""])
 
-            video_path = None
+            video_paths = [None] * 10  # 初始化10个视频路径
+            selection_info = {"sentence_id": None, "video_index": None}
+            candidate_info_json = ""
             
             # 从输出数据中查找对应的文本
             if output_data and choice != "请选择":
@@ -400,35 +603,122 @@ def create_interface():
                     # 从choice中提取句子ID
                     if "句子" in choice:
                         sentence_id = int(choice.split("句子")[1].split(":")[0])
+                        selection_info["sentence_id"] = sentence_id
                         
                         # 查找对应的文本
                         for item in data:
                             if item.get('id') == sentence_id:
                                 text = item.get('text', '')
                                 audio_length = item.get('audio_length', '')
-                                # 调用match_video获取视频路径
+                                
+                                # 调用match_multiple_videos获取10个候选视频
                                 if text:
-                                    video_path = f"{os.getenv('VIDEO_HOUSE')}{match_video(text=text, audio_length=audio_length)}"
+                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=10)
                                     
-                                    # 更新video_path
-                                    item['video_path'] = video_path if video_path else ''
+                                    # 更新视频路径列表
+                                    for i, video_info in enumerate(video_list):
+                                        if i < 10:  # 最多10个视频
+                                            video_paths[i] = video_info["file_path"]
                                     
-                                    # 重新生成JSON字符串
-                                    output_data = json.dumps(data, ensure_ascii=False, indent=2)
+                                    # 更新全局状态
+                                    candidate_videos_state.update({
+                                        "sentence_id": sentence_id,
+                                        "text": text,
+                                        "audio_length": audio_length,
+                                        "videos": video_list
+                                    })
+                                    candidate_info_json = json.dumps(candidate_videos_state, ensure_ascii=False)
                                     
-                                    # 更新下拉框的值为当前选择的句子
-                                    choice_value = choice
-                                    
+                                    print(f"[INFO] 为句子 {sentence_id} 匹配到 {len(video_list)} 个候选视频")
                                     break
+                                    
                 except Exception as e:
                     print(f"[ERROR] 匹配视频时出错: {e}")
             
-            return video_path, output_data, choice
+            # 返回10个视频路径、输出数据、选择信息和候选视频信息
+            return tuple([video_paths[0], video_paths[1], video_paths[2], video_paths[3], video_paths[4], 
+                         video_paths[5], video_paths[6], video_paths[7], video_paths[8], video_paths[9], 
+                         output_data, candidate_info_json])
+
+        # 为每个候选视频选择按钮创建事件处理函数
+        def create_video_selection_handler(video_index):
+            def select_video(output_data):
+                """
+                处理视频选择，更新格式化和主视频播放器
+                """
+                print(f"[DEBUG] 选择按钮 {video_index + 1} 被点击")
+                print(f"[DEBUG] 全局状态: sentence_id={candidate_videos_state.get('sentence_id')}, 视频数量={len(candidate_videos_state.get('videos', []))}")
+                print(f"[DEBUG] 输出数据长度: {len(output_data) if output_data else 'None'}")
+                
+                if not output_data:
+                    print("[WARNING] 输出数据为空")
+                    return None, output_data
+                
+                # 检查全局状态中是否有候选视频信息
+                sentence_id = candidate_videos_state.get("sentence_id")
+                videos = candidate_videos_state.get("videos", [])
+                
+                if sentence_id is None or not videos:
+                    print("[WARNING] 没有候选视频信息或句子ID为空")
+                    return None, output_data
+                
+                try:
+                    # 检查视频索引是否有效
+                    if video_index >= len(videos) or video_index < 0:
+                        print(f"[ERROR] 无效的视频索引: {video_index}, 视频列表长度: {len(videos)}")
+                        return None, output_data
+                    
+                    # 获取选中的视频信息
+                    selected_video = videos[video_index]
+                    selected_video_path = selected_video.get("file_path", "")
+                    
+                    print(f"[DEBUG] 选中的视频路径: {selected_video_path}")
+                    
+                    # 解析当前格式化数据
+                    data = json.loads(output_data)
+                    
+                    # 更新对应句子的video_path
+                    for item in data:
+                        if item.get('id') == sentence_id:
+                            old_path = item.get('video_path', '')
+                            item['video_path'] = selected_video_path
+                            print(f"[DEBUG] 更新句子 {sentence_id} 的视频路径: {old_path} -> {selected_video_path}")
+                            break
+                    
+                    # 重新生成JSON字符串
+                    updated_output_data = json.dumps(data, ensure_ascii=False, indent=2)
+                    
+                    print(f"[INFO] 为句子 {sentence_id} 选择视频 {video_index + 1}: {selected_video_path}")
+                    
+                    # 返回选中的视频路径和更新的格式化数据
+                    return selected_video_path, updated_output_data
+                    
+                except json.JSONDecodeError as e:
+                    print(f"[ERROR] JSON解析错误: {e}")
+                    return None, output_data
+                except Exception as e:
+                    print(f"[ERROR] 选择视频时出错: {e}")
+                    return None, output_data
+            
+            return select_video
+
+        # 为每个选择按钮绑定事件
+        for i in range(10):
+            selection_handler = create_video_selection_handler(i)
+            candidate_buttons[i].click(
+                fn=selection_handler,
+                inputs=[output_text],
+                outputs=[tts_video_player, output_text]
+            )
+            
+
         
         video_button.click(
             fn=match_video_for_selection,
             inputs=[tts_dropdown, topic_input, output_text],
-            outputs=[tts_video_player, output_text, tts_dropdown]
+            outputs=[candidate_videos[0], candidate_videos[1], candidate_videos[2], candidate_videos[3], candidate_videos[4],
+                    candidate_videos[5], candidate_videos[6], candidate_videos[7], candidate_videos[8], candidate_videos[9],
+                    output_text, candidate_videos_info]
         )
         
         # 添加示例文案
@@ -446,4 +736,4 @@ def create_interface():
 
 if __name__ == "__main__":
     demo = create_interface()
-    demo.launch(server_port=9005, allowed_paths=["D:/Material/video"])
+    demo.launch(server_port=9005, allowed_paths=["D:/Material"])

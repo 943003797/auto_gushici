@@ -3,7 +3,7 @@ from scenedetect.detectors import ContentDetector
 from scenedetect.video_splitter import split_video_ffmpeg, is_ffmpeg_available
 from scenedetect.frame_timecode import FrameTimecode
 from pathlib import Path
-from BigModel.video import video
+from src.ai_models.big_model.video import video
 import os
 import glob
 import subprocess
@@ -106,7 +106,7 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
         result = subprocess.run(cmd, check=True)
         # 大模型二次裁剪
         print(f"duration：{duration}")
-        if(duration > 7):
+        if(duration > 8):
             print(f"output_path：{output_path}")
             splitTime = v.get_video_tag(video_path=output_path)
             if splitTime is None:
