@@ -1,11 +1,11 @@
 import gradio as gr
 from tomlkit import value
 from src.agents.agent_v3 import agent_v3 as ag
-from src.video_processing.autocut.auto_cut_v3 import auto_cut_v3 as act
+from src.autocut.auto_cut_v3 import auto_cut_v3 as act
 import os, json, shutil
 import asyncio
 from pathlib import Path
-from src.video_processing.autocut.auto_cut_v3 import autoCut
+from src.autocut.auto_cut_v3 import autoCut
 
 def create_ui():
     with gr.Blocks(title="语录开头古诗词短视频 V3") as demo:

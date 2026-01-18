@@ -229,7 +229,7 @@ print(f"找到 {len(mp4_files)} 个MP4文件: {mp4_files}")
 if not mp4_files:
     print("在 D:/Material/ 目录中没有找到任何.mp4文件")
     exit(1)
-output_dir = Path(f"D:/Material/video_tmp/")
+output_dir = Path(f"D:/Material/video_cuted/")
 # 读取 output_dir 中数字最大的文件名
 max_num = 0
 if output_dir.exists():

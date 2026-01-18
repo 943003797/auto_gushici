@@ -1,11 +1,11 @@
-import sys, os, argparse, logging, shutil
+import sys, os, argparse, logging, shutil, json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.ai_models.big_model.video import video
-from src.video_processing.vector_db.vectorDB import VectorDB
+from src.vector.vectordb import VectorDB
 from typing import List, Tuple
 
 # 控制线程数
-DEFAULT_MAX_WORKERS = 3
+DEFAULT_MAX_WORKERS = 1
 
 # 源视频目录（需要处理的视频）
 SOURCE_VIDEO_FOLDER = r"D:/Material/video_tmp"
@@ -156,12 +156,11 @@ class VideoToVectorProcessor:
             tag = self.video_processor.get_video_info_tag(file_path)
             
             # 拼装metadata
-            tag["duration"] = str(duration)
+            tag["duration"] = int(duration)
             print(f"视频时长: {duration} 秒")
             # 计算目标路径
             folder_path, file_name = self._get_destination_path()
             tag["fileName"] = f"{os.path.basename(folder_path)}/{file_name}"
-            
             # 调用添加文档方法
             if self.vector_db.add_documents(fileNamePath=[file_path], metadatas=[tag]):
                 # 移动视频文件到目标目录

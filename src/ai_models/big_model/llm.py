@@ -49,6 +49,36 @@ class LLM:
             print(f"[ERROR] LLM.get_tag 出错: {e}")
             # 返回默认标签
             return "忧郁|江海|独处|独饮|情感共鸣"
+    
+    def get_video_description(self, wenan: str, text: str) -> str:
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user", 
+                        "content": f"""
+                                    综合完整文案的内容。为这句文案：{text}，描述一个合适的配视频场景。字数在20字以内。下面是完整的文案：
+                                    完整文案：{wenan}
+                                    以JSON格式返回：{"video_description": "视频描述"}
+                                    """
+                    }
+                ],
+                stream=False,              # 禁用流式输出
+                max_tokens=4096,          # 最大输出 tokens
+                temperature=0.7           # 控制输出的随机性
+            )
+            
+            # 直接获取内容，假设 response 有 choices 属性
+            if hasattr(response, 'choices') and response.choices:
+                return response.choices[0].message.content
+            else:
+                # 如果不是预期的格式，尝试其他可能的属性
+                return str(response)
+                
+        except Exception as e:
+            print(f"[ERROR] LLM.get_video_description 出错: {e}")
+            # 返回默认描述
 
 if __name__ == "__main__":
     llm = LLM()

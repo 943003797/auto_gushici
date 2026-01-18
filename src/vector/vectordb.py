@@ -112,13 +112,14 @@ class VectorDB:
         Returns:
             搜索结果字典
         """
+        print(f"查询query_text: {query_text}")
         query_embedding = self._get_embeddings([query_text])[0]
-        print(f"匹配视频: {query_text}")
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
             where=where
         )
+        print(f"查询结果: {results}")
         return results
     
     def get_collection_info(self) -> Dict[str, Any]:

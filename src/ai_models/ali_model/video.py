@@ -1,6 +1,7 @@
-import dashscope, os, json
+import dashscope, os, requests
 from http import HTTPStatus
 from dotenv import load_dotenv
+from pathlib import Path
 load_dotenv()
 
 class video_embedding:
@@ -26,6 +27,7 @@ class video_embedding:
                 "output": resp.output,
                 "usage": resp.usage
             }
+            print('get embedding success')
             
             # 取出embedding数据
             embeddings = resp.output['embeddings']

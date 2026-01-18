@@ -85,7 +85,9 @@ def format_text(content):
                 'text': item['text'],
                 'audio_length': item['audio_length'],
                 'video_path': '',  # 暂时留空（配音后会被更新）
-                'audio_patch': ''  # 暂时留空（配音后会被更新）
+                'audio_patch': '',  # 暂时留空（配音后会被更新）
+                'danmu': '', # 弹幕内容
+                'danmu_style': '' # 弹幕样式
             })
         
         return json.dumps(result_data, ensure_ascii=False, indent=2)
@@ -237,6 +239,30 @@ def create_interface():
                         min_width=100
                     )
                 
+                # 弹幕配置区域
+                gr.Markdown("### 💬 弹幕配置")
+                with gr.Row():
+                    # 弹幕文本输入框（重点标注）
+                    danmu_text_input = gr.Textbox(
+                        label="📝 弹幕文本",
+                        placeholder="请输入要显示的弹幕内容...",
+                        info="重点：这里输入的文本将作为弹幕显示",
+                        interactive=True,
+                        elem_id="danmu_text_input",
+                        scale=3
+                    )
+                    
+                    # 弹幕位置选择器
+                    danmu_position_dropdown = gr.Dropdown(
+                        choices=["请选择", "middle", "top", "bottom", "left", "right"],
+                        value="请选择",
+                        label="📍 弹幕位置",
+                        info="选择弹幕在视频中的显示位置",
+                        interactive=True,
+                        elem_id="danmu_position_dropdown",
+                        scale=1
+                    )
+                
                 # 音频播放器
                 tts_audio_player = gr.Audio(
                     label="音频播放器",
@@ -265,55 +291,36 @@ def create_interface():
         # 候选视频区域
         gr.Markdown("### 📹 候选视频选择")
         
-        # 创建两行5个的候选视频布局
+        # 创建四行5列的候选视频布局（总共20个候选视频）
         candidate_videos = []
         candidate_buttons = []
         
-        # 第一行：视频1-5
-        with gr.Row():
-            for i in range(1, 6):
-                with gr.Column(scale=1):
-                    # 视频播放器
-                    video_player = gr.Video(
-                        label=f"候选视频 {i}",
-                        interactive=True,
-                        elem_id=f"candidate_video_{i}",
-                        scale=3
-                    )
-                    candidate_videos.append(video_player)
-                    
-                    # 选择按钮
-                    select_button = gr.Button(
-                        value=f"选择这个视频",
-                        variant="primary",
-                        size="md",
-                        elem_id=f"select_video_{i}",
-                        scale=1
-                    )
-                    candidate_buttons.append(select_button)
-        
-        # 第二行：视频6-10
-        with gr.Row():
-            for i in range(6, 11):
-                with gr.Column(scale=1):
-                    # 视频播放器
-                    video_player = gr.Video(
-                        label=f"候选视频 {i}",
-                        interactive=True,
-                        elem_id=f"candidate_video_{i}",
-                        scale=3
-                    )
-                    candidate_videos.append(video_player)
-                    
-                    # 选择按钮
-                    select_button = gr.Button(
-                        value=f"选择这个视频",
-                        variant="primary",
-                        size="md",
-                        elem_id=f"select_video_{i}",
-                        scale=1
-                    )
-                    candidate_buttons.append(select_button)
+        # 创建20个候选视频的布局
+        for row_start in range(0, 20, 5):
+            with gr.Row():
+                for i in range(row_start + 1, min(row_start + 6, 21)):
+                    with gr.Column(scale=1):
+                        # 视频播放器
+                        video_player = gr.Video(
+                            label=f"候选视频 {i}",
+                            interactive=True,
+                            elem_id=f"candidate_video_{i}",
+                            scale=3,
+                            height=180,
+                            autoplay=True,
+                            loop=True,
+                        )
+                        candidate_videos.append(video_player)
+                        
+                        # 选择按钮
+                        select_button = gr.Button(
+                            value=f"选择这个视频",
+                            variant="primary",
+                            size="sm",
+                            elem_id=f"select_video_{i}",
+                            scale=1
+                        )
+                        candidate_buttons.append(select_button)
         
         # 存储候选视频信息的隐藏组件
         candidate_videos_info = gr.Textbox(
@@ -426,6 +433,82 @@ def create_interface():
             outputs=[tts_audio_player, tts_video_player]
         )
         
+        # 弹幕文本输入和位置选择事件处理
+        def update_danmu_config(danmu_text, danmu_position, selected_choice, output_data):
+            """
+            处理弹幕文本和位置配置的更新
+            只有在选择了danmu_style时（不是"请选择"）才进行更新
+            如果选择了"请选择"，则清空danmu和danmu_style字段
+            """
+            if not output_data or not selected_choice or selected_choice == "请选择":
+                return output_data
+            
+            try:
+                # 从选择的句子中提取ID
+                if "句子" in selected_choice:
+                    sentence_id = int(selected_choice.split("句子")[1].split(":")[0])
+                    
+                    # 解析输出数据
+                    data = json.loads(output_data)
+                    
+                    # 更新对应的句子的弹幕配置
+                    for item in data:
+                        if item.get('id') == sentence_id:
+                            # 只有在选择了danmu_style时才进行更新
+                            if danmu_position and danmu_position != "请选择":
+                                # 更新弹幕位置
+                                item['danmu_style'] = danmu_position
+                                
+                                # 如果有弹幕文本，也更新弹幕文本
+                                if danmu_text and danmu_text.strip():
+                                    item['danmu'] = danmu_text.strip()
+                                else:
+                                    # 如果没有弹幕文本，设置为空字符串
+                                    item['danmu'] = ""
+                                
+                                print(f"[DEBUG] 更新句子 {sentence_id} 的弹幕配置: text={danmu_text}, position={danmu_position}")
+                            elif danmu_position == "请选择":
+                                # 如果选择了"请选择"，清空弹幕相关字段
+                                item['danmu'] = ""
+                                item['danmu_style'] = ""
+                                print(f"[DEBUG] 清空句子 {sentence_id} 的弹幕配置")
+                            
+                            break
+                    
+                    # 返回更新后的JSON数据
+                    return json.dumps(data, ensure_ascii=False, indent=2)
+            
+            except Exception as e:
+                print(f"[ERROR] 更新弹幕配置时出错: {e}")
+                return output_data
+            
+            return output_data
+        
+        # 绑定弹幕文本输入事件（不直接触发更新，只保存状态）
+        def update_danmu_text_only(danmu_text, selected_choice, output_data):
+            """
+            只更新弹幕文本输入框的状态，不触发格式化结果更新
+            """
+            if not output_data or not selected_choice or selected_choice == "请选择":
+                return output_data
+            
+            # 这个函数主要用于保存弹幕文本输入状态
+            # 实际的格式化结果更新在位置选择器change时触发
+            return output_data
+        
+        danmu_text_input.change(
+            fn=update_danmu_text_only,
+            inputs=[danmu_text_input, tts_dropdown, output_text],
+            outputs=[output_text]
+        )
+        
+        # 绑定弹幕位置选择事件（主要更新逻辑）
+        danmu_position_dropdown.change(
+            fn=update_danmu_config,
+            inputs=[danmu_text_input, danmu_position_dropdown, tts_dropdown, output_text],
+            outputs=[output_text]
+        )
+        
         # 绑定配音按钮点击事件
         def voice_generation_with_updates(content, topic_name):
             import time
@@ -472,7 +555,9 @@ def create_interface():
                                 'text': item['text'],
                                 'audio_length': item['audio_length'],
                                 'video_path': video_path,
-                                'audio_patch': audio_path
+                                'audio_patch': audio_path,
+                                'danmu': item.get('danmu', ''),
+                                'danmu_style': item.get('danmu_style', '')
                             })
                         
                         formatted_json = json.dumps(result_data, ensure_ascii=False, indent=2)
@@ -583,14 +668,14 @@ def create_interface():
         # 绑定视频按钮点击事件
         def match_video_for_selection(choice, topic_name, output_data):
             """
-            处理视频匹配，展示10个候选视频
+            处理视频匹配，展示20个候选视频
             """
             # 如果是"请选择"，直接返回
             if choice == "请选择":
                 print("[DEBUG] 用户选择了'请选择'，清空候选视频")
-                return tuple([None] * 10 + [output_data, ""])
+                return tuple([None] * 20 + [output_data, ""])
 
-            video_paths = [None] * 10  # 初始化10个视频路径
+            video_paths = [None] * 20  # 初始化20个视频路径
             selection_info = {"sentence_id": None, "video_index": None}
             candidate_info_json = ""
             
@@ -611,13 +696,13 @@ def create_interface():
                                 text = item.get('text', '')
                                 audio_length = item.get('audio_length', '')
                                 
-                                # 调用match_multiple_videos获取10个候选视频
+                                # 调用match_multiple_videos获取20个候选视频
                                 if text:
-                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=10)
+                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=20)
                                     
-                                    # 更新视频路径列表
+                                    # 更新视频路径列表（最多20个视频）
                                     for i, video_info in enumerate(video_list):
-                                        if i < 10:  # 最多10个视频
+                                        if i < 20:
                                             video_paths[i] = video_info["file_path"]
                                     
                                     # 更新全局状态
@@ -635,9 +720,11 @@ def create_interface():
                 except Exception as e:
                     print(f"[ERROR] 匹配视频时出错: {e}")
             
-            # 返回10个视频路径、输出数据、选择信息和候选视频信息
+            # 返回20个视频路径、输出数据、选择信息和候选视频信息
             return tuple([video_paths[0], video_paths[1], video_paths[2], video_paths[3], video_paths[4], 
                          video_paths[5], video_paths[6], video_paths[7], video_paths[8], video_paths[9], 
+                         video_paths[10], video_paths[11], video_paths[12], video_paths[13], video_paths[14],
+                         video_paths[15], video_paths[16], video_paths[17], video_paths[18], video_paths[19],
                          output_data, candidate_info_json])
 
         # 为每个候选视频选择按钮创建事件处理函数
@@ -702,8 +789,8 @@ def create_interface():
             
             return select_video
 
-        # 为每个选择按钮绑定事件
-        for i in range(10):
+        # 为每个选择按钮绑定事件（支持20个候选视频）
+        for i in range(20):
             selection_handler = create_video_selection_handler(i)
             candidate_buttons[i].click(
                 fn=selection_handler,
@@ -718,6 +805,8 @@ def create_interface():
             inputs=[tts_dropdown, topic_input, output_text],
             outputs=[candidate_videos[0], candidate_videos[1], candidate_videos[2], candidate_videos[3], candidate_videos[4],
                     candidate_videos[5], candidate_videos[6], candidate_videos[7], candidate_videos[8], candidate_videos[9],
+                    candidate_videos[10], candidate_videos[11], candidate_videos[12], candidate_videos[13], candidate_videos[14],
+                    candidate_videos[15], candidate_videos[16], candidate_videos[17], candidate_videos[18], candidate_videos[19],
                     output_text, candidate_videos_info]
         )
         

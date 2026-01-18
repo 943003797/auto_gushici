@@ -64,22 +64,26 @@ def match_video(text: str, audio_length: int) -> str:
         print(f"[ERROR] 匹配视频时出错: {e}")
         return ""
 
-def match_multiple_videos(text: str, audio_length: int, n_results: int = 10) -> list:
+def match_multiple_videos(text: str, audio_length: int, n_results: int = 20) -> list:
     """
     根据文案内容匹配多个候选视频文件路径
     
     Args:
         text (str): 输入的文案内容
         audio_length (int): 音频文件的时长（秒）
-        n_results (int): 返回的视频数量，默认为10
+        n_results (int): 返回的视频数量，默认为20
         
     Returns:
         list: 匹配到的视频文件信息列表，每个元素包含file_name和score等信息
     """
     try:
         vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video")
-        where = {"duration": str(audio_length)}
-        
+        where = {"duration": audio_length}
+        where = {
+            "duration": {
+                "$in": [audio_length, audio_length + 1, audio_length + 2]
+            }
+        }
         results = vector_db.search(query_text=text, n_results=n_results, where=where)
         print(f"[DEBUG] vector_db.search: {results}")
         
