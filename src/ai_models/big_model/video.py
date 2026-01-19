@@ -78,7 +78,7 @@ class video:
                         {
                             "type": "text",
                             "text": """
-                            从这个视频中，截取3到8秒能表达视频核心意境的片段,输出用于分割的开始时间和结束时间（单位：秒）
+                            从这个视频中，截取3到9秒能表达视频核心意境的片段,输出用于分割的开始时间和结束时间（单位：秒）
                             按这个JSON格式输出：
                             {
                                 "start": "",
@@ -103,8 +103,8 @@ class video:
                 # 校验start和end字段值是否为数字
                 if not (parsed.get('start').isdigit() and parsed.get('end').isdigit()):
                     return self.get_video_tag(video_path)
-                # 校验start到end的时间是否超过7秒
-                if int(parsed['end']) - int(parsed['start']) > 8:
+                # 校验start到end的时间是否超过9秒
+                if int(parsed['end']) - int(parsed['start']) > 9:
                     return self.get_video_tag(video_path)
                 # 校验必须字段及类型
                 required_keys = {'start', 'end'}

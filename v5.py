@@ -291,14 +291,14 @@ def create_interface():
         # 候选视频区域
         gr.Markdown("### 📹 候选视频选择")
         
-        # 创建四行5列的候选视频布局（总共20个候选视频）
+        # 创建五行10列的候选视频布局（总共50个候选视频）
         candidate_videos = []
         candidate_buttons = []
         
-        # 创建20个候选视频的布局
-        for row_start in range(0, 20, 5):
+        # 创建50个候选视频的布局（5行10列）
+        for row_start in range(0, 50, 10):
             with gr.Row():
-                for i in range(row_start + 1, min(row_start + 6, 21)):
+                for i in range(row_start + 1, min(row_start + 11, 51)):
                     with gr.Column(scale=1):
                         # 视频播放器
                         video_player = gr.Video(
@@ -306,7 +306,7 @@ def create_interface():
                             interactive=True,
                             elem_id=f"candidate_video_{i}",
                             scale=3,
-                            height=180,
+                            height=150,  # 减少高度以适应更多视频
                             autoplay=True,
                             loop=True,
                         )
@@ -314,7 +314,7 @@ def create_interface():
                         
                         # 选择按钮
                         select_button = gr.Button(
-                            value=f"选择这个视频",
+                            value=f"选择",
                             variant="primary",
                             size="sm",
                             elem_id=f"select_video_{i}",
@@ -668,14 +668,14 @@ def create_interface():
         # 绑定视频按钮点击事件
         def match_video_for_selection(choice, topic_name, output_data):
             """
-            处理视频匹配，展示20个候选视频
+            处理视频匹配，展示50个候选视频
             """
             # 如果是"请选择"，直接返回
             if choice == "请选择":
                 print("[DEBUG] 用户选择了'请选择'，清空候选视频")
-                return tuple([None] * 20 + [output_data, ""])
+                return tuple([None] * 50 + [output_data, ""])
 
-            video_paths = [None] * 20  # 初始化20个视频路径
+            video_paths = [None] * 50  # 初始化50个视频路径
             selection_info = {"sentence_id": None, "video_index": None}
             candidate_info_json = ""
             
@@ -696,13 +696,13 @@ def create_interface():
                                 text = item.get('text', '')
                                 audio_length = item.get('audio_length', '')
                                 
-                                # 调用match_multiple_videos获取20个候选视频
+                                # 调用match_multiple_videos获取50个候选视频
                                 if text:
-                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=20)
+                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=50)
                                     
-                                    # 更新视频路径列表（最多20个视频）
+                                    # 更新视频路径列表（最多50个视频）
                                     for i, video_info in enumerate(video_list):
-                                        if i < 20:
+                                        if i < 50:
                                             video_paths[i] = video_info["file_path"]
                                     
                                     # 更新全局状态
@@ -720,11 +720,17 @@ def create_interface():
                 except Exception as e:
                     print(f"[ERROR] 匹配视频时出错: {e}")
             
-            # 返回20个视频路径、输出数据、选择信息和候选视频信息
+            # 返回50个视频路径、输出数据、选择信息和候选视频信息
             return tuple([video_paths[0], video_paths[1], video_paths[2], video_paths[3], video_paths[4], 
                          video_paths[5], video_paths[6], video_paths[7], video_paths[8], video_paths[9], 
                          video_paths[10], video_paths[11], video_paths[12], video_paths[13], video_paths[14],
                          video_paths[15], video_paths[16], video_paths[17], video_paths[18], video_paths[19],
+                         video_paths[20], video_paths[21], video_paths[22], video_paths[23], video_paths[24],
+                         video_paths[25], video_paths[26], video_paths[27], video_paths[28], video_paths[29],
+                         video_paths[30], video_paths[31], video_paths[32], video_paths[33], video_paths[34],
+                         video_paths[35], video_paths[36], video_paths[37], video_paths[38], video_paths[39],
+                         video_paths[40], video_paths[41], video_paths[42], video_paths[43], video_paths[44],
+                         video_paths[45], video_paths[46], video_paths[47], video_paths[48], video_paths[49],
                          output_data, candidate_info_json])
 
         # 为每个候选视频选择按钮创建事件处理函数
@@ -789,8 +795,8 @@ def create_interface():
             
             return select_video
 
-        # 为每个选择按钮绑定事件（支持20个候选视频）
-        for i in range(20):
+        # 为每个选择按钮绑定事件（支持50个候选视频）
+        for i in range(50):
             selection_handler = create_video_selection_handler(i)
             candidate_buttons[i].click(
                 fn=selection_handler,
@@ -807,6 +813,12 @@ def create_interface():
                     candidate_videos[5], candidate_videos[6], candidate_videos[7], candidate_videos[8], candidate_videos[9],
                     candidate_videos[10], candidate_videos[11], candidate_videos[12], candidate_videos[13], candidate_videos[14],
                     candidate_videos[15], candidate_videos[16], candidate_videos[17], candidate_videos[18], candidate_videos[19],
+                    candidate_videos[20], candidate_videos[21], candidate_videos[22], candidate_videos[23], candidate_videos[24],
+                    candidate_videos[25], candidate_videos[26], candidate_videos[27], candidate_videos[28], candidate_videos[29],
+                    candidate_videos[30], candidate_videos[31], candidate_videos[32], candidate_videos[33], candidate_videos[34],
+                    candidate_videos[35], candidate_videos[36], candidate_videos[37], candidate_videos[38], candidate_videos[39],
+                    candidate_videos[40], candidate_videos[41], candidate_videos[42], candidate_videos[43], candidate_videos[44],
+                    candidate_videos[45], candidate_videos[46], candidate_videos[47], candidate_videos[48], candidate_videos[49],
                     output_text, candidate_videos_info]
         )
         

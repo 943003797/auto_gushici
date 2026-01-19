@@ -17,7 +17,7 @@ class TTS:
         """
         voice_id_map = {
             "风吟": "cosyvoice-v3-plus-bailian-6385d3a209a245b6bb52dd13d72001c1",
-            "刘涛": "cosyvoice-v3-plus-bailian-12428e4e96e949e6a21121b8455a7bf6",
+            "刘涛": "cosyvoice-v3-plus-bailian-e67cf27a251148e3ac712a2a442d704a",
         }
         self.voice_id = voice_id_map.get(voice_id, voice_id)
         
@@ -26,7 +26,7 @@ class TTS:
         synthesizer = SpeechSynthesizer(
             model = "cosyvoice-v3-plus",
             voice = self.voice_id,
-            speech_rate = 1,
+            speech_rate = 1.16,
             additional_params={"bit_rate": 64}, 
             seed = random.randint(0, 65535),
             language_hints = ["zh"]
