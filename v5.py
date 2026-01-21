@@ -236,6 +236,16 @@ def create_interface():
                         scale=1,
                         min_width=100
                     )
+                    
+                    # 加载数据按钮
+                    load_data_button = gr.Button(
+                        value="📂 加载数据",
+                        variant="secondary",
+                        size="lg",
+                        elem_id="load_data_button",
+                        scale=1,
+                        min_width=100
+                    )
 
                 # 弹幕配置区域
                 gr.Markdown("### 💬 弹幕配置")
@@ -593,6 +603,41 @@ def create_interface():
             fn=voice_generation_with_updates,
             inputs=[input_text, topic_input],
             outputs=[tts_dropdown, output_text]
+        )
+        
+        # 加载数据按钮的事件处理
+        def load_data_to_dropdown(output_data):
+            """
+            加载格式化数据到文案片段选择下拉框
+            """
+            if not output_data:
+                return gr.update(choices=["请选择"], value="请选择")
+            
+            try:
+                data = json.loads(output_data)
+                if not data:
+                    return gr.update(choices=["请选择"], value="请选择")
+                
+                # 生成选项列表
+                segment_choices = ["请选择"]
+                for item in data:
+                    item_id = item.get('id', '')
+                    item_text = item.get('text', '')[:20] if item.get('text') else ''
+                    choice_label = f"句子{item_id}: {item_text}..."
+                    segment_choices.append(choice_label)
+                
+                print(f"[INFO] 加载了 {len(data)} 个文案片段")
+                return gr.update(choices=segment_choices, value="请选择")
+                
+            except Exception as e:
+                print(f"[ERROR] 加载数据失败: {e}")
+                return gr.update(choices=["请选择"], value="请选择")
+        
+        # 绑定加载数据按钮点击事件
+        load_data_button.click(
+            fn=load_data_to_dropdown,
+            inputs=[output_text],
+            outputs=[tts_dropdown]
         )
         
         # 重新生成按钮的事件处理

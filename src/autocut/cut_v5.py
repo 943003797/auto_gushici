@@ -108,8 +108,8 @@ class autoCut():
                 video_segment = draft.VideoSegment(material = video_material,
                                                                 target_timerange  = trange(int(itemPeiyinNow), int(audio_length)),
                                                                 volume=0)
-                if(key%2 != 1):
-                  video_segment.add_transition(TransitionType.叠化, duration = 100000)
+                # if(key%2 != 1):
+                video_segment.add_transition(TransitionType.叠化, duration = 300000)
                 # video_segment.add_animation(IntroType.渐显, 100000)
                 # video_segment.add_animation(OutroType.渐隐, 100000)
                 # 交替使用BGV1和BGV2轨道
