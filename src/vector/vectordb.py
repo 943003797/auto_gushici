@@ -119,7 +119,6 @@ class VectorDB:
             n_results=n_results,
             where=where
         )
-        print(f"查询结果: {results}")
         return results
     
     def get_collection_info(self) -> Dict[str, Any]:

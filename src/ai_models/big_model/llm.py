@@ -1,6 +1,7 @@
 from zai import ZhipuAiClient
 import os
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
@@ -79,6 +80,46 @@ class LLM:
         except Exception as e:
             print(f"[ERROR] LLM.get_video_description 出错: {e}")
             # 返回默认描述
+
+    def match_video(self, wenan: str, video_content: str) -> str:
+        json_format = """
+        {
+            "video_index": 视频索引（数字）
+        }
+        """
+        content = f"""
+        文案：{wenan}
+        任务：为这句文案匹配一个最合适的视频。返回对应视频的index索引
+        以下是{len(video_content)}个视频内容的描述：
+        {chr(10).join(f'{idx}: {item}' for idx, item in enumerate(video_content))}
+
+        以JSON格式返回：{json_format}
+        """
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user", 
+                        "content": content
+                    }
+                ],
+                stream=False,              # 禁用流式输出
+                max_tokens=4096,          # 最大输出 tokens
+                temperature=0.7           # 控制输出的随机性
+            )
+            # 直接获取内容，假设 response 有 choices 属性
+            if hasattr(response, 'choices') and response.choices:
+                result = json.loads(response.choices[0].message.content)
+                if "video_index" in result:
+                    return result["video_index"]
+            else:
+                # 如果不是预期的格式，尝试其他可能的属性
+                return self.match_video(wenan=wenan, video_content=video_content)
+                
+        except Exception as e:
+            print(f"[ERROR] LLM.match_video 出错: {e}")
+            # 返回默认视频路径
 
 if __name__ == "__main__":
     llm = LLM()

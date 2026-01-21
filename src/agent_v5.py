@@ -42,27 +42,20 @@ def get_audio_duration(audio_path):
         print(f"获取音频时长失败: {e}")
         return None
 
-def match_video(text: str, audio_length: int) -> str:
+def match_video(wenan: str, video_content: list) -> str:
     """
-    根据文案内容匹配对应的视频文件路径（单个）
+    根据文案内容匹配对应的视频内容（单个）
     
     Args:
         text (str): 输入的文案内容
-        audio_length (int): 音频文件的时长（秒）
+        video_content (list): 视频内容列表
         
     Returns:
-        str: 匹配到的视频文件路径，若未匹配到则返回空字符串
+        str: 匹配到的视频内容，若未匹配到则返回空字符串
     """
-    try:
-        # 复用match_multiple_videos函数，获取第一个结果
-        video_list = match_multiple_videos(text, audio_length, 1)
-        if video_list:
-            return video_list[0]["file_name"]
-        return ""
-        
-    except Exception as e:
-        print(f"[ERROR] 匹配视频时出错: {e}")
-        return ""
+    llm = LLM()
+    index = llm.match_video(wenan=wenan, video_content=video_content)
+    return int(index)
 
 def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> list:
     """
@@ -85,7 +78,7 @@ def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> 
             }
         }
         results = vector_db.search(query_text=text, n_results=n_results, where=where)
-        print(f"[DEBUG] vector_db.search: {results}")
+        # print(f"[DEBUG] vector_db.search_results metadatas: {results['metadatas']}")
         
         video_list = []
         
@@ -98,7 +91,8 @@ def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> 
                             "file_name": metadata.get("fileName", ""),
                             "score": results.get("distances", [[]])[0][i] if results.get("distances") and len(results.get("distances", [])) > 0 and len(results.get("distances")[0]) > i else 0,
                             "duration": metadata.get("duration", ""),
-                            "file_path": f"{os.getenv('VIDEO_HOUSE')}{metadata.get('fileName', '')}"
+                            "file_path": f"{os.getenv('VIDEO_HOUSE')}{metadata.get('fileName', '')}",
+                            "content": metadata.get("content", "")
                         }
                         video_list.append(video_info)
                         if len(video_list) >= n_results:
@@ -117,7 +111,8 @@ def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> 
                                 "file_name": metadata.get("fileName", ""),
                                 "score": results_dict.get("distances", [[]])[0][i] if results_dict.get("distances") and len(results_dict.get("distances", [])) > 0 and len(results_dict.get("distances")[0]) > i else 0,
                                 "duration": metadata.get("duration", ""),
-                                "file_path": f"{os.getenv('VIDEO_HOUSE')}{metadata.get('fileName', '')}"
+                                "file_path": f"{os.getenv('VIDEO_HOUSE')}{metadata.get('fileName', '')}",
+                                "content": metadata.get("content", "")
                             }
                             video_list.append(video_info)
                             if len(video_list) >= n_results:
@@ -223,7 +218,7 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
         os.makedirs(target_dir, exist_ok=True)
         
         # 初始化TTS
-        tts = TTS(voice_id="刘涛")
+        tts = TTS(voice_id="刘涛", speech_rate=1.2)
         
         results = []
         success_count = 0

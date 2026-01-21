@@ -1,3 +1,4 @@
+from cv2.gapi import video
 import gradio as gr, os, json
 
 from src.agent_v5 import format_content, process_complete_workflow, match_video, match_multiple_videos
@@ -33,7 +34,7 @@ def regenerate_audio_for_sentence(text: str, sentence_id: int, topic_name: str) 
         os.makedirs(target_dir, exist_ok=True)
         
         # 初始化TTS
-        tts = TTS("刘涛")
+        tts = TTS(voice_id="刘涛", speech_rate=1.2)
         
         # 生成音频文件名
         audio_filename = f"{sentence_id}.mp3"
@@ -206,18 +207,15 @@ def create_interface():
             
             # 右侧：配音功能
             with gr.Column():
-                gr.Markdown("### 🎤 配音功能")
-                
-                # 配音按钮
-                voice_button = gr.Button(
-                    value="🎤 开始配音 ②",
-                    variant="secondary",
-                    size="md",
-                    elem_id="voice_button"
-                )
-                
-                # 文案片段选择和重新生成按钮
+                                # 文案片段选择和重新生成按钮
                 with gr.Row():
+                    # 配音按钮
+                    voice_button = gr.Button(
+                        value="🎤 开始配音 ②",
+                        variant="secondary",
+                        size="md",
+                        elem_id="voice_button"
+                    )
                     # 文案片段选择
                     tts_dropdown = gr.Dropdown(
                         choices=["请选择"],
@@ -233,12 +231,12 @@ def create_interface():
                     regen_audio_button = gr.Button(
                         value="🔄 重新生成",
                         variant="primary",
-                        size="sm",
+                        size="lg",
                         elem_id="regen_audio_button",
                         scale=1,
                         min_width=100
                     )
-                
+
                 # 弹幕配置区域
                 gr.Markdown("### 💬 弹幕配置")
                 with gr.Row():
@@ -267,22 +265,35 @@ def create_interface():
                 tts_audio_player = gr.Audio(
                     label="音频播放器",
                     type="filepath",
-                    interactive=True,  # 确保音频播放器是可交互的
+                    interactive=False,  # 确保音频播放器是可交互的
                     elem_id="tts_audio_player"
                 )
-                # 配视频按钮
-                video_button = gr.Button(
-                    value="🎥 开始配视频 ③",
-                    variant="secondary",
-                    size="md",
-                    elem_id="video_button",
-                    scale=1
-                )
+                
+                # 视频数量选择器和配视频按钮在一行
+                with gr.Row():
+                    # 视频数量选择器
+                    video_count_selector = gr.Dropdown(
+                        choices=[20, 30, 40, 50],
+                        value=20,
+                        label="📊 候选视频数量",
+                        interactive=True,
+                        elem_id="video_count_selector",
+                        scale=1
+                    )
+                    
+                    # 配视频按钮
+                    video_button = gr.Button(
+                        value="🎥 开始配视频 ③",
+                        variant="primary",
+                        size="lg",
+                        elem_id="video_button",
+                        scale=4
+                    )
 
                 # 保留原有的主背景视频播放器
                 tts_video_player = gr.Video(
                     label="背景视频",
-                    interactive=True,
+                    interactive=False,
                     elem_id="tts_video_player",
                     scale=3,
                     height=260
@@ -303,7 +314,7 @@ def create_interface():
                         # 视频播放器
                         video_player = gr.Video(
                             label=f"候选视频 {i}",
-                            interactive=True,
+                            interactive=False,
                             elem_id=f"candidate_video_{i}",
                             scale=3,
                             height=150,  # 减少高度以适应更多视频
@@ -615,7 +626,7 @@ def create_interface():
                                 
                                 # 更新输出数据中的audio_patch和audio_length
                                 if audio_path and audio_length is not None:
-                                    item['audio_patch'] = os.path.basename(audio_path)
+                                    item['audio_patch'] = audio_path  # 保存完整路径
                                     item['audio_length'] = audio_length
                                     # 重新生成JSON字符串
                                     updated_output_data = json.dumps(data, ensure_ascii=False, indent=2)
@@ -625,7 +636,7 @@ def create_interface():
                                     return audio_path, f"{message}\n\n✅ 已更新到音频播放器，音频长度: {audio_length}秒", updated_output_data
                                 elif audio_path:
                                     # 如果只有路径但没有长度，至少更新路径
-                                    item['audio_patch'] = os.path.basename(audio_path)
+                                    item['audio_patch'] = audio_path  # 保存完整路径
                                     # 重新生成JSON字符串
                                     updated_output_data = json.dumps(data, ensure_ascii=False, indent=2)
                                     
@@ -666,18 +677,21 @@ def create_interface():
         )
         
         # 绑定视频按钮点击事件
-        def match_video_for_selection(choice, topic_name, output_data):
+        def match_video_for_selection(choice, topic_name, output_data, video_count):
             """
-            处理视频匹配，展示50个候选视频
+            处理视频匹配，根据用户选择展示相应数量的候选视频
             """
             # 如果是"请选择"，直接返回
             if choice == "请选择":
                 print("[DEBUG] 用户选择了'请选择'，清空候选视频")
-                return tuple([None] * 50 + [output_data, ""])
+                return tuple([None] * 50 + [output_data, "", None])
 
-            video_paths = [None] * 50  # 初始化50个视频路径
+            # 根据选择动态初始化数组
+            video_paths = [None] * 50  # 始终初始化50个视频路径用于UI
+            video_content = [None] * 50  # 始终初始化50个视频内容用于UI
             selection_info = {"sentence_id": None, "video_index": None}
             candidate_info_json = ""
+            updated_data = None  # 用于存储更新后的数据
             
             # 从输出数据中查找对应的文本
             if output_data and choice != "请选择":
@@ -696,14 +710,32 @@ def create_interface():
                                 text = item.get('text', '')
                                 audio_length = item.get('audio_length', '')
                                 
-                                # 调用match_multiple_videos获取50个候选视频
+                                # 根据用户选择获取对应数量的候选视频
                                 if text:
-                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=50)
-                                    
-                                    # 更新视频路径列表（最多50个视频）
+                                    video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=video_count)
+                                    print(f"[DEBUG] 获取到 {len(video_list)} 个候选视频")
+                                    # 更新视频路径列表（最多50个视频，但实际只使用video_count个）
                                     for i, video_info in enumerate(video_list):
-                                        if i < 50:
+                                        if i < 50:  # UI最多显示50个
                                             video_paths[i] = video_info["file_path"]
+                                            video_content[i] = video_info["content"]
+                                    # 为多余的槽位设置占位符
+                                    for i in range(len(video_list), 50):
+                                        video_paths[i] = None  # 多余的槽位保持为None
+                                    
+                                    # 匹配最佳视频
+                                    # match_video_index = match_video(text=str(video_content))
+                                    match_video_index = 0
+                                    print(f"[DEBUG] 最佳视频index: {match_video_index}")
+                                    
+                                    # 直接将最佳视频更新到格式化结果中
+                                    if match_video_index is not None and 0 <= match_video_index < len(video_list):
+                                        best_video_path = video_list[match_video_index]["file_path"]
+                                        item['video_path'] = best_video_path
+                                        print(f"[DEBUG] 直接更新句子 {sentence_id} 的视频路径: {best_video_path}")
+                                    
+                                    # 保存更新后的数据
+                                    updated_data = data
                                     
                                     # 更新全局状态
                                     candidate_videos_state.update({
@@ -713,14 +745,17 @@ def create_interface():
                                         "videos": video_list
                                     })
                                     candidate_info_json = json.dumps(candidate_videos_state, ensure_ascii=False)
-                                    
-                                    print(f"[INFO] 为句子 {sentence_id} 匹配到 {len(video_list)} 个候选视频")
                                     break
                                     
                 except Exception as e:
                     print(f"[ERROR] 匹配视频时出错: {e}")
             
-            # 返回50个视频路径、输出数据、选择信息和候选视频信息
+            # 返回50个视频路径、更新后的输出数据、选择信息和候选视频信息
+            # 确保最佳视频显示在tts_video_player中
+            best_video_for_player = None
+            if match_video_index is not None and 0 <= match_video_index < len(video_paths):
+                best_video_for_player = video_paths[match_video_index]
+            
             return tuple([video_paths[0], video_paths[1], video_paths[2], video_paths[3], video_paths[4], 
                          video_paths[5], video_paths[6], video_paths[7], video_paths[8], video_paths[9], 
                          video_paths[10], video_paths[11], video_paths[12], video_paths[13], video_paths[14],
@@ -731,7 +766,8 @@ def create_interface():
                          video_paths[35], video_paths[36], video_paths[37], video_paths[38], video_paths[39],
                          video_paths[40], video_paths[41], video_paths[42], video_paths[43], video_paths[44],
                          video_paths[45], video_paths[46], video_paths[47], video_paths[48], video_paths[49],
-                         output_data, candidate_info_json])
+                         json.dumps(updated_data, ensure_ascii=False, indent=2) if updated_data else output_data, 
+                         candidate_info_json, best_video_for_player])
 
         # 为每个候选视频选择按钮创建事件处理函数
         def create_video_selection_handler(video_index):
@@ -808,7 +844,7 @@ def create_interface():
         
         video_button.click(
             fn=match_video_for_selection,
-            inputs=[tts_dropdown, topic_input, output_text],
+            inputs=[tts_dropdown, topic_input, output_text, video_count_selector],
             outputs=[candidate_videos[0], candidate_videos[1], candidate_videos[2], candidate_videos[3], candidate_videos[4],
                     candidate_videos[5], candidate_videos[6], candidate_videos[7], candidate_videos[8], candidate_videos[9],
                     candidate_videos[10], candidate_videos[11], candidate_videos[12], candidate_videos[13], candidate_videos[14],
@@ -819,7 +855,7 @@ def create_interface():
                     candidate_videos[35], candidate_videos[36], candidate_videos[37], candidate_videos[38], candidate_videos[39],
                     candidate_videos[40], candidate_videos[41], candidate_videos[42], candidate_videos[43], candidate_videos[44],
                     candidate_videos[45], candidate_videos[46], candidate_videos[47], candidate_videos[48], candidate_videos[49],
-                    output_text, candidate_videos_info]
+                    output_text, candidate_videos_info, tts_video_player]
         )
         
         # 添加示例文案

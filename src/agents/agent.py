@@ -105,7 +105,7 @@ async def general_poetry(title: str = "") -> list:
 async def generate_text(text: str = "", name: str = "", out_dir: str = "", reference_audio: str = "material/reference_audio/风吟.wav") -> bool:
     if not out_dir:
         out_dir = os.getenv("DRAFT_DIR") or ""
-    tts = TTS(voice_id="风吟")
+    tts = TTS(voice_id="风吟", speech_rate=1)
     tts.textToAudio(text=text + '。', out_path=f"{out_dir}/{name}")
     return True
 
@@ -118,7 +118,7 @@ async def generate_tts(title: str, wenan: str = "", poetry: str = "", out_dir: s
         wenanList = wenan.split('，')
         for key, str in enumerate(wenanList):
             if str.strip():  # 只处理非空字符串
-                tts = TTS(voice_id="风吟")
+                tts = TTS(voice_id="风吟", speech_rate=1)
                 tts.textToAudio(text=str + '。', out_path=f"{out_dir}/wenan_{key}.mp3")
     
     # generate_audio_cosyvoiceV3(text=title, out_path=f"{out_dir}/title.mp3")
@@ -126,7 +126,7 @@ async def generate_tts(title: str, wenan: str = "", poetry: str = "", out_dir: s
         for item in json.loads(poetry):
             shangju = item["shangju"]
             xiaju = item["xiaju"]
-            tts = TTS(voice_id="风吟")
+            tts = TTS(voice_id="风吟", speech_rate=1)
             time.sleep(1)
             tts.textToAudio(text=shangju, out_path=f"{out_dir}/{item['id']}_1.mp3")
             time.sleep(1)

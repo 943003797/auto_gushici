@@ -23,5 +23,8 @@ if __name__ == '__main__':
     这种落差，比从未拥有过更让人绝望。
     """
     text = "寻寻觅觅，冷冷清清，凄凄惨惨戚戚。"
-    video_description = llm.get_video_description(wenan, text)
+    # video_description = llm.get_video_description(wenan, text)
+
+    video_content = ["开心的小孩在唱歌", "屋内一人在落寞的来回走动"]
+    video_description = llm.match_video(wenan="它被公认为宋词里的万古愁心之祖", video_content=video_content)
     print(video_description)

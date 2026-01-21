@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class TTS:
-    def __init__(self, voice_id: str = "风吟")->bool:
+    def __init__(self, voice_id: str = "风吟", speech_rate: float = 1.0)->bool:
         """
         初始化 TTS 实例
 
@@ -16,17 +16,18 @@ class TTS:
             out_path (str): 默认输出目录，可在调用 textToAudio 时单独指定。
         """
         voice_id_map = {
-            "风吟": "cosyvoice-v3-plus-bailian-6385d3a209a245b6bb52dd13d72001c1",
+            "风吟": "cosyvoice-v3-plus-bailian-e33a49563ae84b25880a6e0caee9de9b",
             "刘涛": "cosyvoice-v3-plus-bailian-e67cf27a251148e3ac712a2a442d704a",
         }
         self.voice_id = voice_id_map.get(voice_id, voice_id)
+        self.speech_rate = speech_rate
         
     def textToAudio(self, text: str = "", out_path: str = "") -> bool:
         dashscope.api_key = os.getenv("ALI_KEY")
         synthesizer = SpeechSynthesizer(
             model = "cosyvoice-v3-plus",
             voice = self.voice_id,
-            speech_rate = 1.16,
+            speech_rate = self.speech_rate,
             additional_params={"bit_rate": 64}, 
             seed = random.randint(0, 65535),
             language_hints = ["zh"]
