@@ -71,7 +71,7 @@ list = """[
     "audio_length": 6,
     "video_path": "D:/Material/video/1/1473.mp4",
     "audio_patch": "draft/JianyingPro Drafts/唐多令芦叶满汀州/Resources/audioAlg/8.mp3",
-    "danmu": "欲买桂花同载酒终不似少年游",
+    "danmu": "欲买桂花同载酒\\n终不似\\n少年游",
     "danmu_style": "right"
   },
   {
