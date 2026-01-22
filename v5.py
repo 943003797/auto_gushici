@@ -177,15 +177,13 @@ def create_interface():
                 topic_input = gr.Textbox(
                     label="主题名称",
                     placeholder="请输入项目主题名称...",
-                    info="将作为项目文件夹名称",
                     elem_id="topic_input"
                 )
 
                 input_text = gr.Textbox(
                     label="输入文案",
                     placeholder="请在此输入文案内容，每行一句话...",
-                    lines=8,
-                    info="请输入需要格式化的文案，支持多行文本",
+                    lines=4,
                     elem_id="input_text"
                 )
                 
@@ -197,10 +195,9 @@ def create_interface():
                 )
                 
                 output_text = gr.Textbox(
-                    label="格式化结果",
-                    lines=11,
-                    max_lines=11,
-                    info="格式化后的结构化数据将显示在这里",
+                    label="格式化数据",
+                    lines=9,
+                    max_lines=9,
                     interactive=True,
                     elem_id="output_text"
                 )
@@ -214,14 +211,14 @@ def create_interface():
                         value="🎤 开始配音 ②",
                         variant="secondary",
                         size="md",
-                        elem_id="voice_button"
+                        elem_id="voice_button",
+                        elem_classes=["voice-button"]
                     )
                     # 文案片段选择
                     tts_dropdown = gr.Dropdown(
                         choices=["请选择"],
                         label="文案片段选择",
                         value="请选择",
-                        info="选择要播放的文案片段",
                         interactive=True,  # 修复：设置为可交互
                         elem_id="tts_dropdown",
                         scale=3
@@ -245,31 +242,6 @@ def create_interface():
                         elem_id="load_data_button",
                         scale=1,
                         min_width=100
-                    )
-
-                # 弹幕配置区域
-                gr.Markdown("### 💬 弹幕配置")
-                with gr.Row():
-                    # 弹幕文本输入框（重点标注）
-                    danmu_text_input = gr.TextArea(
-                        label="📝 弹幕文本",
-                        placeholder="请输入要显示的弹幕内容...",
-                        info="重点：这里输入的文本将作为弹幕显示",
-                        interactive=True,
-                        elem_id="danmu_text_input",
-                        scale=3,
-                        lines=4,
-                    )
-                    
-                    # 弹幕位置选择器
-                    danmu_position_dropdown = gr.Dropdown(
-                        choices=["请选择", "middle", "top", "bottom", "left", "right"],
-                        value="请选择",
-                        label="📍 弹幕位置",
-                        info="选择弹幕在视频中的显示位置",
-                        interactive=True,
-                        elem_id="danmu_position_dropdown",
-                        scale=1
                     )
                 
                 # 音频播放器
@@ -309,7 +281,30 @@ def create_interface():
                     scale=3,
                     height=260
                 )
-                
+        # 弹幕配置区域
+        gr.Markdown("### 💬 弹幕配置")
+        with gr.Row():
+            # 弹幕文本输入框（重点标注）
+            danmu_text_input = gr.TextArea(
+                label="📝 弹幕文本",
+                placeholder="请输入要显示的弹幕内容...",
+                info="重点：这里输入的文本将作为弹幕显示",
+                interactive=True,
+                elem_id="danmu_text_input",
+                scale=3,
+                lines=4,
+            )
+            
+            # 弹幕位置选择器
+            danmu_position_dropdown = gr.Dropdown(
+                choices=["请选择", "middle", "top", "bottom", "left", "right"],
+                value="请选择",
+                label="📍 弹幕位置",
+                info="选择弹幕在视频中的显示位置",
+                interactive=True,
+                elem_id="danmu_position_dropdown",
+                scale=1
+            )        
         # 候选视频区域
         gr.Markdown("### 📹 候选视频选择")
         
