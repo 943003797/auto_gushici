@@ -251,13 +251,14 @@ def create_interface():
                 gr.Markdown("### 💬 弹幕配置")
                 with gr.Row():
                     # 弹幕文本输入框（重点标注）
-                    danmu_text_input = gr.Textbox(
+                    danmu_text_input = gr.TextArea(
                         label="📝 弹幕文本",
                         placeholder="请输入要显示的弹幕内容...",
                         info="重点：这里输入的文本将作为弹幕显示",
                         interactive=True,
                         elem_id="danmu_text_input",
-                        scale=3
+                        scale=3,
+                        lines=4,
                     )
                     
                     # 弹幕位置选择器

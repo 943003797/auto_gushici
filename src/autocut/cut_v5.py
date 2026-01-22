@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class autoCut():
-    def __init__(self, title: str = "", list: str = "[]", bgm: str = "爱的供养间奏.mp3", bgv: str = "温柔细粉.mp4"):
+    def __init__(self, title: str = "", list: str = "[]", bgm: str = "爱的供养间奏.mp3"):
         self.title = title
         self.list = json.loads(list)
         self.tts_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/audioAlg/"
@@ -17,7 +17,6 @@ class autoCut():
         self.bgp_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/image/"
         self.output_dir = os.getenv("DRAFT_DIR") + self.title
         self.bgm = bgm
-        self.bgv = bgv
         self.audioNowTime = 0
         self.textNowTime = 0
 
