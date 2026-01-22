@@ -483,7 +483,9 @@ def create_interface():
                                 
                                 # 如果有弹幕文本，也更新弹幕文本
                                 if danmu_text and danmu_text.strip():
-                                    item['danmu'] = danmu_text.strip()
+                                    # 对换行符进行转义处理
+                                    escaped_danmu_text = danmu_text.strip().replace('\n', '\\n')
+                                    item['danmu'] = escaped_danmu_text
                                 else:
                                     # 如果没有弹幕文本，设置为空字符串
                                     item['danmu'] = ""
