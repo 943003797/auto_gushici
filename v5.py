@@ -243,7 +243,16 @@ def create_interface():
                         scale=1,
                         min_width=100
                     )
-                
+
+                # 保留原有的主背景视频播放器
+                tts_video_player = gr.Video(
+                    label="背景视频",
+                    interactive=False,
+                    elem_id="tts_video_player",
+                    scale=3,
+                    height=260
+                )
+
                 # 音频播放器
                 tts_audio_player = gr.Audio(
                     label="音频播放器",
@@ -251,8 +260,7 @@ def create_interface():
                     interactive=False,  # 确保音频播放器是可交互的
                     elem_id="tts_audio_player"
                 )
-                
-                # 视频数量选择器和配视频按钮在一行
+                                # 视频数量选择器和配视频按钮在一行
                 with gr.Row():
                     # 视频数量选择器
                     video_count_selector = gr.Dropdown(
@@ -272,39 +280,58 @@ def create_interface():
                         elem_id="video_button",
                         scale=4
                     )
-
-                # 保留原有的主背景视频播放器
-                tts_video_player = gr.Video(
-                    label="背景视频",
-                    interactive=False,
-                    elem_id="tts_video_player",
-                    scale=3,
-                    height=260
-                )
         # 弹幕配置区域
-        gr.Markdown("### 💬 弹幕配置")
         with gr.Row():
-            # 弹幕文本输入框（重点标注）
-            danmu_text_input = gr.TextArea(
-                label="📝 弹幕文本",
-                placeholder="请输入要显示的弹幕内容...",
-                info="重点：这里输入的文本将作为弹幕显示",
-                interactive=True,
-                elem_id="danmu_text_input",
-                scale=3,
-                lines=4,
-            )
-            
-            # 弹幕位置选择器
-            danmu_position_dropdown = gr.Dropdown(
-                choices=["请选择", "middle", "top", "bottom", "left", "right"],
-                value="请选择",
-                label="📍 弹幕位置",
-                info="选择弹幕在视频中的显示位置",
-                interactive=True,
-                elem_id="danmu_position_dropdown",
-                scale=1
-            )        
+            # 弹幕配置标题
+            with gr.Column(scale=1):
+                gr.Markdown("### 💬 弹幕配置")
+                with gr.Row():
+                # 弹幕文本输入框（重点标注）
+                    danmu_text_input = gr.TextArea(
+                        label="📝 弹幕文本",
+                        placeholder="请输入要显示的弹幕内容...",
+                        interactive=True,
+                        elem_id="danmu_text_input",
+                        scale=3,
+                        lines=4,
+                    )
+                    
+                    # 弹幕位置选择器
+                    danmu_position_dropdown = gr.Dropdown(
+                        choices=["请选择", "middle", "top", "bottom", "left", "right"],
+                        value="请选择",
+                        label="📍 弹幕位置",
+                        interactive=True,
+                        elem_id="danmu_position_dropdown",
+                        scale=1
+                    )
+            with gr.Column(scale=1):
+                gr.Markdown("📚 翻页")        
+                with gr.Row():
+                    now_text = gr.Text(
+                        label="📜 当前文案",
+                        value="",
+                        interactive=False,
+                        elem_id="text"
+                    )
+                with gr.Row():
+                    prev_button = gr.Button(
+                        value="⬅️ 上一条",
+                        variant="primary",
+                        size="lg",
+                        elem_id="prev_button",
+                        scale=1,
+                        min_width=100
+                    )
+                    next_button = gr.Button(    
+                        value="➡️ 下一条",
+                        variant="primary",
+                        size="lg",
+                        elem_id="next_button",
+                        scale=1,
+                        min_width=100
+                    )
+
         # 候选视频区域
         gr.Markdown("### 📹 候选视频选择")
         
@@ -636,6 +663,132 @@ def create_interface():
             fn=load_data_to_dropdown,
             inputs=[output_text],
             outputs=[tts_dropdown]
+        )
+        
+        # 上一条按钮的事件处理
+        def go_to_prev_item(selected_choice, output_data):
+            """
+            处理上一条按钮点击
+            将下拉选择向上移动，并将当前选择的文案显示到text文本框
+            """
+            if not output_data or selected_choice == "请选择":
+                return gr.update(choices=["请选择"], value="请选择"), ""
+            
+            try:
+                data = json.loads(output_data)
+                if not data:
+                    return gr.update(choices=["请选择"], value="请选择"), ""
+                
+                # 生成所有选项
+                segment_choices = ["请选择"]
+                for item in data:
+                    item_id = item.get('id', '')
+                    item_text = item.get('text', '')[:20] if item.get('text') else ''
+                    choice_label = f"句子{item_id}: {item_text}..."
+                    segment_choices.append(choice_label)
+                
+                # 解析当前选择的句子ID
+                current_id = None
+                if "句子" in selected_choice:
+                    current_id = int(selected_choice.split("句子")[1].split(":")[0])
+                
+                # 找到当前句子的索引
+                current_index = -1
+                for i, item in enumerate(data):
+                    if item.get('id') == current_id:
+                        current_index = i
+                        break
+                
+                if current_index <= 0:
+                    # 已经是第一条，跳转到最后一条
+                    new_index = len(data) - 1
+                else:
+                    new_index = current_index - 1
+                
+                # 获取新句子的信息
+                new_item = data[new_index]
+                new_id = new_item.get('id', 0)
+                new_text = new_item.get('text', '')
+                
+                # 生成新的选择标签
+                choice_label = f"句子{new_id}: {new_text[:20]}..."
+                
+                print(f"[DEBUG] 上一条: 从 {current_id} 跳转到 {new_id}")
+                
+                return gr.update(choices=segment_choices, value=choice_label), new_text
+                
+            except Exception as e:
+                print(f"[ERROR] 上一条处理失败: {e}")
+                return gr.update(choices=["请选择"], value="请选择"), ""
+        
+        # 下一条按钮的事件处理
+        def go_to_next_item(selected_choice, output_data):
+            """
+            处理下一条按钮点击
+            将下拉选择向下移动，并将当前选择的文案显示到text文本框
+            """
+            if not output_data or selected_choice == "请选择":
+                return gr.update(choices=["请选择"], value="请选择"), ""
+            
+            try:
+                data = json.loads(output_data)
+                if not data:
+                    return gr.update(choices=["请选择"], value="请选择"), ""
+                
+                # 生成所有选项
+                segment_choices = ["请选择"]
+                for item in data:
+                    item_id = item.get('id', '')
+                    item_text = item.get('text', '')[:20] if item.get('text') else ''
+                    choice_label = f"句子{item_id}: {item_text}..."
+                    segment_choices.append(choice_label)
+                
+                # 解析当前选择的句子ID
+                current_id = None
+                if "句子" in selected_choice:
+                    current_id = int(selected_choice.split("句子")[1].split(":")[0])
+                
+                # 找到当前句子的索引
+                current_index = -1
+                for i, item in enumerate(data):
+                    if item.get('id') == current_id:
+                        current_index = i
+                        break
+                
+                if current_index >= len(data) - 1:
+                    # 已经是最后一条，跳转到第一条
+                    new_index = 0
+                else:
+                    new_index = current_index + 1
+                
+                # 获取新句子的信息
+                new_item = data[new_index]
+                new_id = new_item.get('id', 0)
+                new_text = new_item.get('text', '')
+                
+                # 生成新的选择标签
+                choice_label = f"句子{new_id}: {new_text[:20]}..."
+                
+                print(f"[DEBUG] 下一条: 从 {current_id} 跳转到 {new_id}")
+                
+                return gr.update(choices=segment_choices, value=choice_label), new_text
+                
+            except Exception as e:
+                print(f"[ERROR] 下一条处理失败: {e}")
+                return gr.update(choices=["请选择"], value="请选择"), ""
+        
+        # 绑定上一条按钮点击事件
+        prev_button.click(
+            fn=go_to_prev_item,
+            inputs=[tts_dropdown, output_text],
+            outputs=[tts_dropdown, now_text]
+        )
+        
+        # 绑定下一条按钮点击事件
+        next_button.click(
+            fn=go_to_next_item,
+            inputs=[tts_dropdown, output_text],
+            outputs=[tts_dropdown, now_text]
         )
         
         # 重新生成按钮的事件处理
