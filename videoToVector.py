@@ -153,7 +153,8 @@ class VideoToVectorProcessor:
             duration = self.video_processor.get_video_duration(file_path)
             
             # 视频内容分析
-            tag = self.video_processor.get_video_info_tag(file_path)
+            # tag = self.video_processor.get_video_info_tag(file_path)
+            tag = []
             
             # 拼装metadata
             tag["duration"] = int(duration)

@@ -3,7 +3,6 @@ from scenedetect.detectors import ContentDetector
 from scenedetect.video_splitter import split_video_ffmpeg, is_ffmpeg_available
 from scenedetect.frame_timecode import FrameTimecode
 from pathlib import Path
-from src.ai_models.big_model.video import video
 import os
 import glob
 import subprocess
@@ -12,7 +11,6 @@ import sys
 
 material_dir = 'D:/Material/new_video'
 material_origin_dir = 'D:/Material/origin'
-v = video()
 # 设置编码
 if sys.platform.startswith('win'):
     # Windows系统编码设置
@@ -76,12 +74,21 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
     print(f"end_time：{end_time}")
     print(f"duration1：{duration}")
     
+    # 检查是否需要对小于3秒的分段进行0.5倍速处理
+    is_short_segment = duration < 3.0
+    if is_short_segment:
+        print(f"分段时长 {duration:.2f}s < 3s，将进行0.5倍速处理")
+        # 对于短片段，需要调整时长参数（0.5倍速意味着输出时长是原始时长的2倍）
+        output_duration = duration * 2.0
+    else:
+        output_duration = duration
+    
     # 使用ffmpeg进行精确切割（优化压缩参数）
     cmd = [
         'ffmpeg', '-i', video_path,
         '-loglevel', 'error',   # 只显示错误
         '-ss', str(start_time),  # 开始时间
-        '-t', str(duration),     # 持续时间
+        '-t', str(output_duration),     # 持续时间
         '-c:v', 'libx264',       # 重新编码视频
         '-preset', 'slow',       # 编码预设：slow提供更好压缩率
         '-crf', '26',           # 质量设置：26是压缩率与画质的平衡点
@@ -93,74 +100,24 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
         '-sc_threshold', '0',   # 禁用场景变化检测
         '-keyint_min', '30',    # 最小关键帧间隔
         '-x264-params', 'aq-mode=3:aq-strength=0.8:psy-rd=1.0:deblock=-1,-1', # 高级编码参数
-        '-c:a', 'aac',          # 重新编码音频
-        '-b:a', '96k',          # 音频码率：降低到96k减小文件大小
-        '-ar', '44100',         # 音频采样率
+    ]
+    
+    # 如果是短片段，添加0.5倍速处理
+    if is_short_segment:
+        cmd.extend([
+            '-vf', 'setpts=2.0*PTS',  # 0.5倍速处理（视频时间轴拉长2倍）
+            '-af', 'atempo=0.5',      # 0.5倍速处理（音频同步变慢）
+        ])
+    
+    cmd.extend([
         '-avoid_negative_ts', 'make_zero',
         '-y',                   # 覆盖输出文件
         str(output_path)
-    ]
+    ])
     
     try:
         # 不捕获输出，让错误信息直接显示在终端
         result = subprocess.run(cmd, check=True)
-        # 大模型二次裁剪
-        print(f"duration：{duration}")
-        if(duration > 9):
-            print(f"output_path：{output_path}")
-            splitTime = v.get_video_tag(video_path=output_path)
-            if splitTime is None:
-                print("无法获取视频时长")
-            else:
-                # 将整数字符串转为秒数
-                start_time = int(splitTime["start"])
-                end_time = int(splitTime["end"])
-                # 二次裁剪：按 start_time 和 end_time 重新截取并覆盖原文件
-                tmp_path = output_path.with_suffix('.tmp.mp4')
-                cmd_trim = [
-                    'ffmpeg', '-i', str(output_path),
-                    '-ss', str(start_time),
-                    '-to', str(end_time),
-                    '-loglevel', 'error',   # 只显示错误
-                    '-c:v', 'libx264',       # 重新编码视频
-                    '-preset', 'slow',       # 编码预设：slow提供更好压缩率
-                    '-crf', '26',           # 质量设置：26是压缩率与画质的平衡点
-                    '-profile:v', 'main',    # H.264主配置文件
-                    '-level', '4.0',        # H.264级别设置
-                    '-pix_fmt', 'yuv420p',  # 像素格式：确保兼容性
-                    '-b:v', '0',            # 设置码率为自动（基于CRF）
-                    '-g', '30',             # GOP大小：每30帧一个关键帧
-                    '-sc_threshold', '0',   # 禁用场景变化检测
-                    '-keyint_min', '30',    # 最小关键帧间隔
-                    '-x264-params', 'aq-mode=3:aq-strength=0.8:psy-rd=1.0:deblock=-1,-1', # 高级编码参数
-                    '-c:a', 'aac',          # 重新编码音频
-                    '-b:a', '96k',          # 音频码率：降低到96k减小文件大小
-                    '-ar', '44100',         # 音频采样率
-                    '-avoid_negative_ts', 'make_zero',
-                    '-y',
-                    str(tmp_path)
-                ]
-                print(f"      执行二次裁剪命令...")
-                subprocess.run(cmd_trim, check=True)
-                
-                # 安全地替换原文件
-                try:
-                    # 先删除原文件
-                    if output_path.exists():
-                        output_path.unlink()
-                    # 将临时文件重命名为最终文件
-                    tmp_path.rename(output_path)
-                    print(f"      二次裁剪完成，文件已覆盖")
-                except Exception as file_error:
-                    # 如果文件操作失败，清理临时文件
-                    if tmp_path.exists():
-                        tmp_path.unlink()
-                    print(f"      文件替换失败: {file_error}")
-                    raise file_error
-                    
-                print(f"二次start_time：{start_time}")
-                print(f"二次end_time：{end_time}")
-        # 大模型二次裁剪
         return True, None
     except subprocess.CalledProcessError as e:
         # 直接输出错误信息
@@ -177,43 +134,7 @@ def precise_cut_with_reencoding(video_path, scene, output_path, adjust_frames=0)
         print(f"执行异常: {str(e)}")
         return False, f"执行异常: {str(e)}"
 
-def remove_audio_from_video(input_path, output_path):
-    """
-    去除视频中的音频轨道并优化压缩
-    """
-    cmd = [
-        'ffmpeg', '-i', str(input_path),
-        '-loglevel', 'error',   # 只显示错误
-        '-an',              # 去除音频
-        '-c:v', 'libx264',  # 重新编码视频以优化压缩
-        '-preset', 'slow',   # 编码预设：slow提供更好压缩率
-        '-crf', '28',      # 质量设置：较高值减小文件大小
-        '-profile:v', 'main', # H.264主配置文件
-        '-level', '4.0',   # H.264级别设置
-        '-pix_fmt', 'yuv420p', # 像素格式
-        '-b:v', '0',       # 设置码率为自动（基于CRF）
-        '-g', '30',        # GOP大小
-        '-sc_threshold', '0', # 禁用场景变化检测
-        '-y',              # 覆盖输出文件
-        str(output_path)
-    ]
-    
-    try:
-        result = subprocess.run(cmd, check=True)
-        return True, None
-    except subprocess.CalledProcessError as e:
-        if e.stderr:
-            try:
-                error_msg = e.stderr.decode('utf-8', errors='ignore')
-                print(f"FFmpeg错误: {error_msg}")
-            except:
-                print("FFmpeg执行失败")
-        else:
-            print("FFmpeg执行失败")
-        return False, str(e)
-    except Exception as e:
-        print(f"执行异常: {str(e)}")
-        return False, f"执行异常: {str(e)}"
+
 
 # 检查是否可用ffmpeg
 if not is_ffmpeg_available():
@@ -280,13 +201,66 @@ for video_path in mp4_files:
         end_time = scene[1].get_timecode()
         # print(f"Scene {i+1}: Start {start_time}, End {end_time}")
 
+    def split_long_scenes(scenes, max_duration=8, split_duration=6, min_split_duration=4):
+        """
+        将超过max_duration秒的场景按split_duration秒拆分
+        小于min_split_duration的片段将被丢弃
+        """
+        split_scenes = []
+        
+        for i, scene in enumerate(scenes):
+            start_time_seconds = scene[0].get_frames() / scene[0].framerate
+            end_time_seconds = scene[1].get_frames() / scene[1].framerate
+            duration = end_time_seconds - start_time_seconds
+            
+            if duration <= max_duration:
+                # 长度合适，直接保留
+                split_scenes.append(scene)
+            else:
+                # 长度超过限制，需要拆分
+                print(f"    场景 {i+1} 时长 {duration:.2f}s，将拆分为6秒片段")
+                current_start = start_time_seconds
+                framerate = scene[0].framerate
+                split_count = 0
+                
+                while current_start + min_split_duration <= end_time_seconds:
+                    # 计算当前片段的结束时间（不超过split_duration）
+                    split_end = min(current_start + split_duration, end_time_seconds)
+                    
+                    # 如果剩余长度小于最小长度，停止拆分
+                    remaining_length = end_time_seconds - split_end
+                    if remaining_length < min_split_duration and split_end < end_time_seconds:
+                        print(f"    剩余长度 {remaining_length:.2f}s < 最小长度，停止拆分")
+                        break
+                    
+                    # 创建拆分后的场景
+                    start_frame = FrameTimecode(int(current_start * framerate), fps=framerate)
+                    end_frame = FrameTimecode(int(split_end * framerate), fps=framerate)
+                    
+                    split_count += 1
+                    print(f"    分段 {split_count}: {current_start:.2f}s - {split_end:.2f}s ({split_end-current_start:.2f}s)")
+                    
+                    split_scenes.append((start_frame, end_frame))
+                    
+                    # 更新下一个片段的开始时间
+                    current_start = split_end
+                    
+                    # 如果已经到达视频末尾，停止
+                    if current_start >= end_time_seconds:
+                        break
+        
+        return split_scenes
+
+    # 对超过8秒的场景进行二次拆分
+    final_scenes = split_long_scenes(filtered_scene_list)
+
     # 创建输出目录
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 使用精确切割方法处理每个场景
-    if filtered_scene_list:  # 确保有场景需要处理
+    if final_scenes:  # 确保有场景需要处理
         
-        for i, scene in enumerate(filtered_scene_list):
+        for i, scene in enumerate(final_scenes):
             # 生成输出文件名
             output_filename = f"{global_scene_counter}.mp4"
             output_path = output_dir / output_filename
@@ -299,23 +273,6 @@ for video_path in mp4_files:
             
             if success:
                 print(f"分段处理完成: {output_filename}")
-                
-                # 去声音处理
-                temp_path = output_path
-                final_path = output_path
-                
-                # 先检查是否需要去声音（这里我们假设总是需要去声音）
-                # 如果想要可选处理，可以添加一个配置变量
-                audio_removed_path = output_dir / f"no_audio_{output_filename}"
-                
-                success_audio, error_audio = remove_audio_from_video(temp_path, audio_removed_path)
-                
-                if success_audio:
-                    # 删除原文件，重命名去声音版本
-                    temp_path.unlink()
-                    audio_removed_path.rename(final_path)
-                else:
-                    print(f"    音频去除失败: {error_audio}")
                 
                 global_scene_counter += 1
             else:
@@ -347,5 +304,11 @@ for video_path in mp4_files:
             print(f"移动原视频失败: {e}")
     else:
         print(f"没有符合条件的场景需要分割: {video_path}")
+        
+    # 显示拆分统计信息
+    original_count = len(filtered_scene_list)
+    final_count = len(final_scenes)
+    if original_count != final_count:
+        print(f"场景拆分统计: 原始场景 {original_count} 个，拆分后 {final_count} 个")
         
 print("\n所有视频处理完成！")
