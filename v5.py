@@ -1045,23 +1045,23 @@ def create_interface():
 
         # 为每个候选视频删除按钮创建事件处理函数
         def create_video_deletion_handler(video_index):
-            def delete_video_handler(output_data):
+            def delete_video_handler():
                 """
                 处理视频删除，从候选视频列表中移除指定的视频
                 """
-                # 检查全局状态中是否有候选视频信息
-                sentence_id = candidate_videos_state.get("sentence_id")
-                videos = candidate_videos_state.get("videos", [])
-                
-                if sentence_id is None or not videos:
-                    print("[WARNING] 没有候选视频信息或句子ID为空")
-                    return output_data
-                
                 try:
+                    # 检查全局状态中是否有候选视频信息
+                    sentence_id = candidate_videos_state.get("sentence_id")
+                    videos = candidate_videos_state.get("videos", [])
+                    
+                    if sentence_id is None or not videos:
+                        print("[WARNING] 没有候选视频信息或句子ID为空")
+                        return None, None, "❌ 没有候选视频信息，无法删除"
+                    
                     # 检查视频索引是否有效
                     if video_index >= len(videos) or video_index < 0:
                         print(f"[ERROR] 无效的视频索引: {video_index}, 视频列表长度: {len(videos)}")
-                        return output_data
+                        return None, None, f"❌ 无效的视频索引: {video_index + 1}"
                     
                     # 获取要删除的视频信息
                     video_to_delete = videos[video_index]
@@ -1070,26 +1070,41 @@ def create_interface():
                     
                     print(f"[DEBUG] 删除视频ID: {video_id}, 路径: {video_file_path}")
                     
+                    # 调用删除视频的函数（使用ID和文件路径）
+                    delete_success = False
+                    if video_id or video_file_path:
+                        try:
+                            delete_success = delete_video(video_id=video_id, video_file_path=video_file_path)
+                            print(f"[INFO] 删除视频结果: {delete_success}")
+                        except Exception as e:
+                            print(f"[WARNING] 删除视频时出错: {e}")
+                    
                     # 从候选视频列表中移除该视频
                     videos.pop(video_index)
                     
                     # 更新全局状态
+                    candidate_videos_state.update({
+                        "sentence_id": sentence_id,
+                        "text": candidate_videos_state.get("text", ""),
+                        "audio_length": candidate_videos_state.get("audio_length", ""),
+                        "videos": videos
+                    })
                     
-                    # 调用删除视频的函数（使用ID而不是文件路径）
-                    if video_id:
-                        try:
-                            delete_result = delete_video(video_id = video_id, video_file_path = video_file_path)
-                            print(f"[INFO] 删除视频ID {video_id} 的结果: {delete_result}")
-                        except Exception as e:
-                            print(f"[WARNING] 删除视频时出错: {e}")
+                    # 生成成功提示消息
+                    if delete_success:
+                        success_message = f"✅ 成功删除候选视频 {video_index + 1}"
                     else:
-                        print(f"[WARNING] 视频信息中缺少ID字段，无法删除视频: {video_file_path}")
+                        success_message = f"⚠️ 已从列表移除候选视频 {video_index + 1}（文件删除失败）"
                     
-                    return output_data
+                    print(f"[INFO] {success_message}，剩余视频数量: {len(videos)}")
+                    
+                    # 返回None表示清空对应的视频播放器
+                    return None, None, success_message
                     
                 except Exception as e:
-                    print(f"[ERROR] 删除视频时出错: {e}")
-                    return output_data
+                    error_message = f"❌ 删除视频时出错: {str(e)}"
+                    print(f"[ERROR] {error_message}")
+                    return None, None, error_message
             
             return delete_video_handler
 
@@ -1106,7 +1121,8 @@ def create_interface():
             deletion_handler = create_video_deletion_handler(i)
             delete_buttons[i].click(
                 fn=deletion_handler,
-                inputs=[output_text]
+                inputs=[],
+                outputs=[candidate_videos[i], candidate_videos_info, result_text]
             )
             
 
