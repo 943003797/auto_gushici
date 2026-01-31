@@ -1085,9 +1085,6 @@ def create_interface():
                     else:
                         print(f"[WARNING] 视频信息中缺少ID字段，无法删除视频: {video_file_path}")
                     
-                    # 更新候选视频信息JSON
-                    candidate_info_json = json.dumps(candidate_videos_state, ensure_ascii=False)
-                    
                     return output_data
                     
                 except Exception as e:
@@ -1109,8 +1106,7 @@ def create_interface():
             deletion_handler = create_video_deletion_handler(i)
             delete_buttons[i].click(
                 fn=deletion_handler,
-                inputs=[output_text],
-                outputs=[output_text]
+                inputs=[output_text]
             )
             
 
