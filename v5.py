@@ -267,8 +267,8 @@ def create_interface():
                     with gr.Column(scale=1):
                         # 视频数量选择器
                         video_count_selector = gr.Dropdown(
-                            choices=[24, 32, 40],
-                            value=32,
+                            choices=[32, 40],
+                            value=40,
                             label="📊 候选视频数量",
                             interactive=True,
                             elem_id="video_count_selector",
@@ -352,6 +352,7 @@ def create_interface():
                             height=150,  # 减少高度以适应更多视频
                             autoplay=True,
                             loop=True,
+                            include_audio=False
                         )
                         candidate_videos.append(video_player)
                         

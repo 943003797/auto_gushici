@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class TTS:
-    def __init__(self, voice_id: str = "风吟磁性")->bool:
+    def __init__(self, voice_id: str = "少女朗诵", speech_rate: float = 1.0)->bool:
         """
         初始化 TTS 实例
 
@@ -17,6 +17,7 @@ class TTS:
             "少女朗诵": "ttv-voice-2026012923280026-QF1iIMuq",
         }
         self.voice_id = voice_id_map.get(voice_id, voice_id)
+        self.speech_rate = speech_rate
         
     def textToAudio(self, text: str = "", out_path: str = "") -> bool:
         payload = {
@@ -24,7 +25,7 @@ class TTS:
             "text": text,
             "voice_setting": {
                 "voice_id": self.voice_id,
-                "speed": 1,
+                "speed": self.speech_rate,
                 "vol": 1,
                 "pitch": 0
             },

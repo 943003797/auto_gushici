@@ -14,7 +14,7 @@ SOURCE_VIDEO_FOLDER = r"D:/Material/video_tmp"
 DEST_VIDEO_FOLDER = r"D:/Material/video"
 
 # 每个文件夹存放的视频数量
-VIDEOS_PER_FOLDER = 2000
+VIDEOS_PER_FOLDER = 1000
 
 class VideoToVectorProcessor:
     def __init__(self, max_workers: int = None):
@@ -154,7 +154,7 @@ class VideoToVectorProcessor:
             
             # 视频内容分析
             # tag = self.video_processor.get_video_info_tag(file_path)
-            tag = []
+            tag = {}
             
             # 拼装metadata
             tag["duration"] = int(duration)
