@@ -1,7 +1,7 @@
 from cv2.gapi import video
 import gradio as gr, os, json
 
-from src.agent_v5 import format_content, process_complete_workflow, match_video, match_multiple_videos
+from src.agent_v5 import format_content, process_complete_workflow, match_video, match_multiple_videos, delete_video
 from src.autocut.cut_v5 import autoCut
 from src.tts.cosyvoice.tts import TTS
 import time
@@ -338,6 +338,7 @@ def create_interface():
         # 创建五行8列的候选视频布局（总共40个候选视频）
         candidate_videos = []
         candidate_buttons = []
+        delete_buttons = []
         
         # 创建40个候选视频的布局（5行8列）
         for row_start in range(0, 40, 8):
@@ -356,14 +357,29 @@ def create_interface():
                         )
                         candidate_videos.append(video_player)
                         
-                        # 选择按钮
-                        select_button = gr.Button(
-                            value=f"选择",
-                            variant="secondary",
-                            size="sm",
-                            elem_id=f"select_video_{i}",
-                        )
-                        candidate_buttons.append(select_button)
+                        # 选择和删除按钮布局
+                        with gr.Row():
+                            # 选择按钮（3/4宽度）
+                            select_button = gr.Button(
+                                value=f"选择",
+                                variant="secondary",
+                                size="sm",
+                                elem_id=f"select_video_{i}",
+                                scale=3,
+                                min_width=75
+                            )
+                            candidate_buttons.append(select_button)
+                            
+                            # 删除按钮（1/4宽度）
+                            delete_button = gr.Button(
+                                value="删除",
+                                variant="stop",
+                                size="sm",
+                                elem_id=f"delete_video_{i}",
+                                scale=1,
+                                min_width=25
+                            )
+                            delete_buttons.append(delete_button)
         
         # 存储候选视频信息的隐藏组件
         candidate_videos_info = gr.Textbox(
@@ -931,7 +947,6 @@ def create_interface():
                                     if match_video_index is not None and 0 <= match_video_index < len(video_list):
                                         best_video_path = video_list[match_video_index]["file_path"]
                                         item['video_path'] = best_video_path
-                                        print(f"[DEBUG] 直接更新句子 {sentence_id} 的视频路径: {best_video_path}")
                                     
                                     # 保存更新后的数据
                                     updated_data = data
@@ -1028,6 +1043,59 @@ def create_interface():
             
             return select_video
 
+        # 为每个候选视频删除按钮创建事件处理函数
+        def create_video_deletion_handler(video_index):
+            def delete_video_handler(output_data):
+                """
+                处理视频删除，从候选视频列表中移除指定的视频
+                """
+                # 检查全局状态中是否有候选视频信息
+                sentence_id = candidate_videos_state.get("sentence_id")
+                videos = candidate_videos_state.get("videos", [])
+                
+                if sentence_id is None or not videos:
+                    print("[WARNING] 没有候选视频信息或句子ID为空")
+                    return output_data
+                
+                try:
+                    # 检查视频索引是否有效
+                    if video_index >= len(videos) or video_index < 0:
+                        print(f"[ERROR] 无效的视频索引: {video_index}, 视频列表长度: {len(videos)}")
+                        return output_data
+                    
+                    # 获取要删除的视频信息
+                    video_to_delete = videos[video_index]
+                    video_id = video_to_delete.get("id", "")
+                    video_file_path = video_to_delete.get("file_path", "")
+                    
+                    print(f"[DEBUG] 删除视频ID: {video_id}, 路径: {video_file_path}")
+                    
+                    # 从候选视频列表中移除该视频
+                    videos.pop(video_index)
+                    
+                    # 更新全局状态
+                    
+                    # 调用删除视频的函数（使用ID而不是文件路径）
+                    if video_id:
+                        try:
+                            delete_result = delete_video(video_id = video_id, video_file_path = video_file_path)
+                            print(f"[INFO] 删除视频ID {video_id} 的结果: {delete_result}")
+                        except Exception as e:
+                            print(f"[WARNING] 删除视频时出错: {e}")
+                    else:
+                        print(f"[WARNING] 视频信息中缺少ID字段，无法删除视频: {video_file_path}")
+                    
+                    # 更新候选视频信息JSON
+                    candidate_info_json = json.dumps(candidate_videos_state, ensure_ascii=False)
+                    
+                    return output_data
+                    
+                except Exception as e:
+                    print(f"[ERROR] 删除视频时出错: {e}")
+                    return output_data
+            
+            return delete_video_handler
+
         # 为每个选择按钮绑定事件（支持40个候选视频）
         for i in range(40):
             selection_handler = create_video_selection_handler(i)
@@ -1035,6 +1103,14 @@ def create_interface():
                 fn=selection_handler,
                 inputs=[output_text],
                 outputs=[tts_video_player, output_text]
+            )
+            
+            # 为对应的删除按钮绑定事件
+            deletion_handler = create_video_deletion_handler(i)
+            delete_buttons[i].click(
+                fn=deletion_handler,
+                inputs=[output_text],
+                outputs=[output_text]
             )
             
 

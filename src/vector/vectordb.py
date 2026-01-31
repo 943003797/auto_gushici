@@ -31,10 +31,8 @@ class VectorDB:
         try:
             self.client = chromadb.PersistentClient(path=self.db_path)
             self.collection = self.client.get_collection(name=self.collection_name)
-            print(f"使用已存在的集合: {self.collection_name}")
         except Exception:
             self.collection = self.client.create_collection(name=self.collection_name)
-            print(f"创建新集合: {self.collection_name}")
     
     def _init_openai_client(self):
         """初始化OpenAI客户端（阿里云兼容模式）"""
@@ -147,6 +145,15 @@ class VectorDB:
             self._init_chromadb()
         except Exception as e:
             print(f"删除集合失败: {e}")
+    
+    def delete_document(self, document_id: str):
+        """删除指定ID的文档"""
+        try:
+            self.collection.delete(ids=[document_id])
+            return True
+        except Exception as e:
+            print(f"删除文档失败: {e}")
+            return False
 
 
     # # 使用示例

@@ -85,14 +85,16 @@ def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> 
         # 处理搜索结果
         if isinstance(results, dict):
             if results and "metadatas" in results and results["metadatas"] and len(results["metadatas"]) > 0:
+                ids = results["ids"][0]
                 for i, metadata_list in enumerate(results["metadatas"]):
-                    for metadata in metadata_list:
+                    for key, metadata in enumerate(metadata_list):
                         video_info = {
                             "file_name": metadata.get("fileName", ""),
                             "score": results.get("distances", [[]])[0][i] if results.get("distances") and len(results.get("distances", [])) > 0 and len(results.get("distances")[0]) > i else 0,
                             "duration": metadata.get("duration", ""),
                             "file_path": f"{os.getenv('VIDEO_HOUSE')}{metadata.get('fileName', '')}",
-                            "content": metadata.get("content", "")
+                            "content": metadata.get("content", ""),
+                            "id": ids[key]
                         }
                         video_list.append(video_info)
                         if len(video_list) >= n_results:
@@ -324,3 +326,35 @@ def process_complete_workflow(content, topic_name, voice_id="风吟"):
         
     except Exception as e:
         return {"status": "error", "message": f"工作流执行失败: {e}"}
+
+def delete_video(video_id: str = '', video_file_path: str = ''):
+    """
+    删除指定路径的视频文件。
+    
+    Args:
+        video_path (str): 视频文件的路径
+        
+    Returns:
+        bool: 如果删除成功则返回True，否则返回False
+    """
+    # 检查视频ID是否为空
+    if not video_id:
+        print("[ERROR] 视频ID不能为空")
+        return False
+    vector_db = VectorDB(collection_name="video", db_path="./Vector/db/video")
+    # 删除视频ID
+    delete_result = vector_db.delete_document(document_id=video_id)
+    if not delete_result:
+        print(f"[ERROR] 视频ID {video_id} 删除失败")
+        return False
+    print(f"[DEBUG] 视频ID {video_id} 删除成功")
+    # 删除视频文件
+    if video_file_path and os.path.exists(video_file_path):
+        try:
+            os.remove(video_file_path)
+            print(f"[DEBUG] 视频文件 {video_file_path} 删除成功")
+        except Exception as e:
+            print(f"[ERROR] 删除视频文件 {video_file_path} 失败: {e}")
+            # 统一返回：文件删除失败也视为整体失败
+            return False
+    return True
