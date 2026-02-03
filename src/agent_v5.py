@@ -5,6 +5,7 @@ from mutagen.wave import WAVE
 from src.tts.cosyvoice.tts import TTS
 from src.ai_models.big_model.llm import LLM
 from src.vector.vectordb import VectorDB
+from src.ai_models.ali_model.reRank import v5_reRank
 
 def get_audio_duration(audio_path):
     """
@@ -74,7 +75,7 @@ def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> 
         where = {"duration": audio_length}
         where = {
             "duration": {
-                "$in": [audio_length, audio_length + 1, audio_length + 2]
+                "$gt": audio_length - 1
             }
         }
         results = vector_db.search(query_text=text, n_results=n_results, where=where)
@@ -101,7 +102,7 @@ def match_multiple_videos(text: str, audio_length: int, n_results: int = 50) -> 
                             break
                     if len(video_list) >= n_results:
                         break
-        
+                video_list = v5_reRank(text, video_list)
         # 如果 results 是字符串格式，尝试解析
         elif isinstance(results, str):
             try:

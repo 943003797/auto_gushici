@@ -1,4 +1,4 @@
-import base64,os,json
+import base64,os,json,time
 from typing import Tuple
 from zai import ZhipuAiClient
 from dotenv import load_dotenv
@@ -140,23 +140,20 @@ class video:
                         {
                             "type": "text",
                             "text": """
-                            给出视频的情绪标签（emotion）、场景标签（scene）、人物关系（person_relation）、互动标签（interaction）、抽象概念标签（abstract_concept）。
-                            参考标签（必须从参考标签中分别选择出唯一一个权重最高的标签）：
-                            情绪标签（emotion）： 平静|忧郁|豪迈|欢快|严肃|孤独|惆怅|温馨|沉重|激动|惊讶|思念
-                            场景标签（scene）： 苍山|江海|大漠|云海|雨天|雪天|枯树|宫廷|院子|古道|古寺|书房|灯火|树林|市井|码头|田园
-                            人物关系（person_relation）： 独处|好友|师徒|君臣|眷侣|路人
-                            互动标签（interaction）： 书写|绘画|研墨|诵读|翻阅|对弈|抚琴|点香|对酌|独饮|行礼|相迎|赠别|挥手|远眺|观望|信步|游历|垂钓|采摘|耕作
-                            抽象概念标签（abstract_concept）（提取时注意，视频注意视频是无声的）： 情感共鸣|时间流逝|留白艺术
-                            tags： 合并情绪标签（emotion）、场景标签（scene）、人物关系（person_relation）、互动标签（interaction）、抽象概念标签（abstract_concept），用|分隔
+                            分析视频中的标签（必须从参考标签中分别选择出唯一一个权重最高的标签）：
+                            人物正脸（positive_face）： 有|无
+                            人物性别（person_gender）： 男|女|无
+                            画面明亮度（brightness）： 明亮|中等|较暗
+                            画面主体颜色（main_color）： 红色|淡红色|黄色|淡黄色|橙色|淡橙色|绿色|淡绿色|蓝色|淡蓝色|紫色|淡紫色|棕色|淡棕色|灰色|淡灰色|白色|淡白色|黑色|淡黑色|等
+                            视频内容（content）： 描述视频的主要内容（只输出视频的主要内容，不输出其他内容）
                             按JSON格式输出(只输出JSON)：
                             {
-                                "emotion": "标签",
-                                "scene": "标签",
-                                "person_relation": "关系",
-                                "interaction": "标签",
-                                "abstract_concept": "标签",
-                                "tags": "标签",
-                                "content": "以情绪标签、场景标签、人物关系、互动标签、抽象概念标签做参考,简短描述视频的主要内容"
+                                "positive_face": "有|无",
+                                "person_gender": "男|女|无",
+                                "brightness": "明亮|中等|较暗",
+                                "main_color": "红色|淡红色|黄色|淡黄色|橙色|淡橙色|绿色|淡绿色|蓝色|淡蓝色|紫色|淡紫色|棕色|淡棕色|灰色|淡灰色|白色|淡白色|黑色|淡黑色|等",
+                                "emotion": "正面|中性|负面",
+                                "content": "描述视频的主要内容（只输出视频的主要内容，不输出其他内容）"
                             }
                             """
                         }
@@ -166,9 +163,9 @@ class video:
             thinking=self.thinking
         )   
         raw = response.choices[0].message.content if response.choices else False
-        print(raw)
+        print(f"raw: {raw}")
         if not raw:
-            return False
+            raw = {}
         # 使用正则提取最外层{}中的JSON字符串
         match = re.search(r'\{.*\}', raw, flags=re.S)
         if match:
@@ -176,14 +173,18 @@ class video:
                 json_str = match.group(0)
                 parsed = json.loads(json_str)
                 # 校验必须字段及类型
-                required_keys = {'emotion', 'scene', 'person_relation', 'interaction', 'abstract_concept', 'tags', 'content'}
+                required_keys = {'positive_face', 'person_gender', 'brightness', 'main_color', 'emotion', 'content'}
                 if not isinstance(parsed, dict) or not required_keys.issubset(parsed):
                     # 结构不符，重新调用本函数
-                    return self.get_video_tag(video_path)
+                    time.sleep(2)
+                    print(f"结构不符 sleep: 2")
+                    return self.get_video_info_tag(video_path)
                 # 校验字段值均为字符串
                 for key in required_keys:
                     if not isinstance(parsed.get(key), str):
-                        return self.get_video_tag(video_path)
+                        time.sleep(2)
+                        print(f"字段值类型不符 sleep: 2")
+                        return self.get_video_info_tag(video_path)
                 return parsed
             except json.JSONDecodeError as e:
                 print(f"JSON解析失败: {e}")
@@ -196,5 +197,9 @@ if __name__ == "__main__":
     # print(f"视频时长: {duration} 秒")
     
     # 测试获取视频标签
-    tag = v.get_video_tag("D:/Material/video_tmp/3.mp4")
-    print(f"视频标签: {tag}")
+    tag = v.get_video_info_tag("D:/Material/video_tmp/56.mp4")
+    print(f"{tag}")
+    tag = v.get_video_info_tag("D:/Material/video_tmp/56.mp4")
+    print(f"{tag}")
+    tag = v.get_video_info_tag("D:/Material/video_tmp/56.mp4")
+    print(f"{tag}")

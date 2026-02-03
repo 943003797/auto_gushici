@@ -1,4 +1,4 @@
-import sys, os, argparse, logging, shutil, json
+import sys, os, argparse, logging, shutil, json, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.ai_models.big_model.video import video
 from src.vector.vectordb import VectorDB
@@ -15,6 +15,8 @@ DEST_VIDEO_FOLDER = r"D:/Material/video"
 
 # 每个文件夹存放的视频数量
 VIDEOS_PER_FOLDER = 1000
+
+SERIES="纪录片中国"
 
 class VideoToVectorProcessor:
     def __init__(self, max_workers: int = None):
@@ -75,7 +77,6 @@ class VideoToVectorProcessor:
             
             # 获取最大文件名
             max_file = max(files)
-            
             if max_file >= VIDEOS_PER_FOLDER:
                 # 当前文件夹已满，使用下一个文件夹
                 return max_folder + 1, 1
@@ -153,9 +154,8 @@ class VideoToVectorProcessor:
             duration = self.video_processor.get_video_duration(file_path)
             
             # 视频内容分析
-            # tag = self.video_processor.get_video_info_tag(file_path)
-            tag = {}
-            
+            tag = self.video_processor.get_video_info_tag(file_path)
+            tag["series"] = SERIES
             # 拼装metadata
             tag["duration"] = int(duration)
             print(f"视频时长: {duration} 秒")
@@ -230,6 +230,9 @@ class VideoToVectorProcessor:
                 except Exception as e:
                     failed_count += 1
                     self.logger.error(f"处理文件 {file_index}.mp4 时发生未捕获异常: {str(e)}")
+                
+                # 每轮视频处理后休眠2秒
+                time.sleep(2)
         
         # 输出统计结果
         self.logger.info(f"处理完成! 成功: {successful_count}, 失败: {failed_count}, 总计: {len(video_files)}")

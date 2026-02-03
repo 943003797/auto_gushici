@@ -182,6 +182,7 @@ def create_interface():
                     label="输入文案",
                     placeholder="请在此输入文案内容，每行一句话...",
                     lines=3,
+                    max_lines=3,
                     elem_id="input_text"
                 )
                 
@@ -264,25 +265,32 @@ def create_interface():
                             elem_classes=["matchvoice"]
                         )
                 with gr.Row():
-                    with gr.Column(scale=1):
-                        # 视频数量选择器
-                        video_count_selector = gr.Dropdown(
-                            choices=[32, 40],
-                            value=40,
-                            label="📊 候选视频数量",
-                            interactive=True,
-                            elem_id="video_count_selector",
-                            elem_classes=["houxunvideo"]
-                        )
-                    with gr.Column(scale=1):
-                        # 配视频按钮
-                        video_button = gr.Button(
-                            value="🎥 开始配视频 ③",
-                            variant="primary",
-                            size="lg",
-                            elem_id="video_button",
-                            elem_classes=["matchvideo"]
-                        )
+                    # 视频数量选择器
+                    video_count_selector = gr.Dropdown(
+                        choices=[32, 40],
+                        value=40,
+                        label="📊 候选视频数量",
+                        interactive=True,
+                        elem_id="video_count_selector",
+                        elem_classes=["houxunvideo"],
+                        scale=1
+                    )
+                    search_text = gr.Text(
+                        label="📜 匹配文本",
+                        value="",
+                        interactive=True,
+                        elem_id="text",
+                        scale=3
+                    )
+                    # 配视频按钮
+                    video_button = gr.Button(
+                        value="🎥 开始配视频 ③",
+                        variant="primary",
+                        size="lg",
+                        elem_id="video_button",
+                        elem_classes=["matchvideo"],
+                        scale=2
+                    )
         # 弹幕配置区域
         with gr.Row():
             # 弹幕配置标题
@@ -351,8 +359,8 @@ def create_interface():
                             interactive=False,
                             elem_id=f"candidate_video_{i}",
                             height=150,  # 减少高度以适应更多视频
-                            autoplay=True,
-                            loop=True,
+                            autoplay=False,
+                            loop=False,
                             include_audio=False
                         )
                         candidate_videos.append(video_player)
@@ -892,7 +900,7 @@ def create_interface():
         )
         
         # 绑定视频按钮点击事件        
-        def match_video_for_selection(choice, topic_name, output_data, video_count):
+        def match_video_for_selection(choice, topic_name, output_data, video_count, search_text):
             """
             处理视频匹配，根据用户选择展示相应数量的候选视频
             """
@@ -924,7 +932,8 @@ def create_interface():
                             if item.get('id') == sentence_id:
                                 text = item.get('text', '')
                                 audio_length = item.get('audio_length', '')
-                                
+                                if search_text:
+                                    text = f"{search_text}"
                                 # 根据用户选择获取对应数量的候选视频
                                 if text:
                                     video_list = match_multiple_videos(text=text, audio_length=audio_length, n_results=video_count)
@@ -969,6 +978,18 @@ def create_interface():
             best_video_for_player = None
             if match_video_index is not None and 0 <= match_video_index < len(video_paths):
                 best_video_for_player = video_paths[match_video_index]
+            
+            # 清空search_text输入框
+            return tuple([video_paths[0], video_paths[1], video_paths[2], video_paths[3], video_paths[4], 
+                         video_paths[5], video_paths[6], video_paths[7], video_paths[8], video_paths[9], 
+                         video_paths[10], video_paths[11], video_paths[12], video_paths[13], video_paths[14],
+                         video_paths[15], video_paths[16], video_paths[17], video_paths[18], video_paths[19],
+                         video_paths[20], video_paths[21], video_paths[22], video_paths[23], video_paths[24],
+                         video_paths[25], video_paths[26], video_paths[27], video_paths[28], video_paths[29],
+                         video_paths[30], video_paths[31], video_paths[32], video_paths[33], video_paths[34],
+                         video_paths[35], video_paths[36], video_paths[37], video_paths[38], video_paths[39],
+                         json.dumps(updated_data, ensure_ascii=False, indent=2) if updated_data else output_data, 
+                         candidate_info_json, best_video_for_player, ""])
             
             return tuple([video_paths[0], video_paths[1], video_paths[2], video_paths[3], video_paths[4], 
                          video_paths[5], video_paths[6], video_paths[7], video_paths[8], video_paths[9], 
@@ -1129,7 +1150,7 @@ def create_interface():
         
         video_button.click(
             fn=match_video_for_selection,
-            inputs=[tts_dropdown, topic_input, output_text, video_count_selector],
+            inputs=[tts_dropdown, topic_input, output_text, video_count_selector, search_text],
             outputs=[candidate_videos[0], candidate_videos[1], candidate_videos[2], candidate_videos[3], candidate_videos[4],
                     candidate_videos[5], candidate_videos[6], candidate_videos[7], candidate_videos[8], candidate_videos[9],
                     candidate_videos[10], candidate_videos[11], candidate_videos[12], candidate_videos[13], candidate_videos[14],
@@ -1138,7 +1159,7 @@ def create_interface():
                     candidate_videos[25], candidate_videos[26], candidate_videos[27], candidate_videos[28], candidate_videos[29],
                     candidate_videos[30], candidate_videos[31], candidate_videos[32], candidate_videos[33], candidate_videos[34],
                     candidate_videos[35], candidate_videos[36], candidate_videos[37], candidate_videos[38], candidate_videos[39],
-                    output_text, candidate_videos_info, tts_video_player]
+                    output_text, candidate_videos_info, tts_video_player, search_text]
         )
         
         # 添加示例文案
