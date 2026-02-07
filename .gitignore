@@ -8,6 +8,7 @@ __pycache__/
 draft/
 # Distribution / packaging
 .Python
+.DS_Store
 .trae/
 build/
 develop-eggs/
