@@ -117,6 +117,7 @@ class autoCut():
         for key,item in enumerate(self.list):
             itemPeiyinNow = self.audioNowTime
             audio_duration = 0
+            print(item['audio_patch'])
             if os.path.exists(f"{item['audio_patch']}"):
                 # 音频
                 AudioMaterial = draft.AudioMaterial(os.path.join(f"{item['audio_patch']}"))
