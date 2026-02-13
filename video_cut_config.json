@@ -1,0 +1,30 @@
+{
+  "video_paths": {
+    "material_dir": "D:/Material/new_video",
+    "origin_dir": "D:/Material/origin",
+    "output_dir": "D:/Material/video_cuted"
+  },
+  "scene_detection": {
+    "threshold": 45,
+    "adjust_frames": 3
+  },
+  "video_processing": {
+    "min_duration": 3.0,
+    "max_duration": 60.0,
+    "split_duration": 30.0,
+    "min_split_duration": 10.0,
+    "discard_threshold": 1.0,
+    "speed_adjust_range": [
+      1.0,
+      4.0
+    ],
+    "speed_target_duration": 4.5
+  },
+  "ffmpeg": {
+    "video_codec": "libx264",
+    "preset": "ultrafast",
+    "crf": 18,
+    "pixel_format": "yuv420p",
+    "log_level": "error"
+  }
+}

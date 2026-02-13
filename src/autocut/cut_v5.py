@@ -129,21 +129,21 @@ class autoCut():
                                 volume=1)
                 self.script.add_segment(AudioSegment, 'TTS')
                 #背景
-                video_material = draft.VideoMaterial(item['video_path'])
-                video_duration = video_material.duration
-                self.script.add_material(video_material)
-                video_segment = draft.VideoSegment(material = video_material,
-                                                                target_timerange  = trange(int(itemPeiyinNow), int(audio_length)),
-                                                                volume=0)
-                if key == 0:
-                  video_segment.add_animation(IntroType.砸出波纹, 2000000)
-                  self.addSound(sfx='空灵水滴.mp3')
-                video_segment.add_transition(TransitionType.叠化, duration = 300000)
+                # video_material = draft.VideoMaterial(item['video_path'])
+                # video_duration = video_material.duration
+                # self.script.add_material(video_material)
+                # video_segment = draft.VideoSegment(material = video_material,
+                #                                                 target_timerange  = trange(int(itemPeiyinNow), int(audio_length)),
+                #                                                 volume=0)
+                # if key == 0:
+                #   video_segment.add_animation(IntroType.砸出波纹, 2000000)
+                #   self.addSound(sfx='空灵水滴.mp3')
+                # video_segment.add_transition(TransitionType.叠化, duration = 300000)
                 # video_segment.add_animation(IntroType.渐显, 100000)
                 # video_segment.add_animation(OutroType.渐隐, 100000)
                 # 交替使用BGV1和BGV2轨道
-                track_name = 'BGV'
-                self.script.add_segment(video_segment, track_name)
+                # track_name = 'BGV'
+                # self.script.add_segment(video_segment, track_name)
 
                 # 字幕
                 TextSegment = draft.TextSegment(f"{item['text']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
