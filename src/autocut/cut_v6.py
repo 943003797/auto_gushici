@@ -1,0 +1,386 @@
+import os, json
+import pyJianYingDraft as draft
+from pyJianYingDraft import TextIntro, TextOutro,TextLoopAnim, Text_loop_anim, Mask_type, VideoSceneEffectType, animation, IntroType, OutroType, Transition_type, trange, GroupAnimationType, TransitionType
+from pyJianYingDraft.script_file import json
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+class autoCut():
+    def __init__(self, title: str = "", list: str = "[]", bgm: str = "爱的供养间奏.mp3"):
+        self.title = title
+        self.list = json.loads(list)
+        self.tts_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/audioAlg/"
+        self.bgm_dir = "./material/bgm/"
+        self.bgv_dir = "./material/bgv/"
+        self.sfx_dir = "./material/sfx/"
+        self.bgp_dir = os.getenv("DRAFT_DIR") + self.title + "/Resources/image/"
+        self.output_dir = os.getenv("DRAFT_DIR") + self.title
+        self.bgm = bgm
+        self.audioNowTime = 0
+        self.textNowTime = 0
+
+        self.script = draft.ScriptFile(1920, 1080)
+        self.script.add_track(draft.TrackType.text, 'SY')
+        self.script.add_track(draft.TrackType.video, 'SUBSY', mute= True, relative_index=2)
+        self.script.add_track(draft.TrackType.text, 'TITLE')
+        self.script.add_track(draft.TrackType.audio, 'BGM')
+        self.script.add_track(draft.TrackType.audio, 'WENAN_AUDIO')
+        self.script.add_track(draft.TrackType.audio, 'TTS')
+        self.script.add_track(draft.TrackType.audio, 'SOUND')
+        self.script.add_track(draft.TrackType.audio, 'SFX')
+        self.script.add_track(draft.TrackType.sticker, 'STK')
+        self.script.add_track(draft.TrackType.video, 'BGV', mute= True, relative_index=0)
+        self.script.add_track(draft.TrackType.video, 'BDTOP', mute= True, relative_index=1)
+        self.script.add_track(draft.TrackType.video, 'BDBOT', mute= True, relative_index=1)
+        self.script.add_track(draft.TrackType.text, 'WENAN')
+        self.script.add_track(draft.TrackType.text, 'DANMU')
+        self.script.add_track(draft.TrackType.text, 'T0')
+        self.script.add_track(draft.TrackType.text, 'T1')
+        self.script.add_track(draft.TrackType.text, 'T2')
+        self.script.add_track(draft.TrackType.text, 'T3')
+        self.script.add_track(draft.TrackType.text, 'T4')
+        self.script.add_track(draft.TrackType.text, 'T5')
+        self.script.add_track(draft.TrackType.text, 'T6')
+        self.script.add_track(draft.TrackType.text, 'ZZ')
+        self.script.add_track(draft.TrackType.text, 'SX')
+
+    def s(self, microseconds: int):
+        return microseconds * 1000000
+
+    def addBgm(self):
+        audio_bgm = draft.AudioMaterial(os.path.join(self.bgm_dir, self.bgm))
+        audio_bgm_lenth = audio_bgm.duration
+        self.script.add_material(audio_bgm)
+        print(self.audioNowTime)
+        audio_bgm_segment = draft.AudioSegment(audio_bgm, trange(0, self.audioNowTime),volume=0.45)
+        audio_bgm_segment.add_fade("0.2s", "1s")
+        self.script.add_segment(audio_bgm_segment, 'BGM')
+        # Title
+        TextSegment = draft.TextSegment(self.title, trange(0, self.audioNowTime),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+                                    font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                    style=draft.TextStyle(color=(1, 0.870588, 0)),                # 设置字体颜色为黄色
+                                    border=draft.TextBorder(alpha=0.2,color=(0.172549, 0.184313, 0.231372)),
+                                    clip_settings=draft.ClipSettings(transform_x=0.765,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+        TextSegment.add_animation(TextIntro.冰雪飘动, 1500000)
+        TextSegment.add_animation(TextOutro.渐隐, 500000)
+        self.script.add_segment(TextSegment, 'TITLE')
+
+        # 水印
+        TextSegment = draft.TextSegment("和光同尘", trange(0, self.audioNowTime),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+                                    font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                    style=draft.TextStyle(color=(1, 1, 1)),                # 设置字体颜色为黄色
+                                    border=draft.TextBorder(alpha=1,color=(0.172549, 0.184313, 0.231372),width=20),
+                                    clip_settings=draft.ClipSettings(transform_x=-0.775,transform_y=0.90, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+        # TextSegment.add_animation(TextIntro.开幕, 1500000)
+        TextSegment.add_animation(TextOutro.渐隐, 500000)
+        TextSegment.add_animation(TextLoopAnim.扫光, 230000)
+        self.script.add_segment(TextSegment, 'SY')
+
+        #边框
+        video_material = draft.VideoMaterial("./material/border/border_v2.png")
+        video_duration = video_material.duration
+        self.script.add_material(video_material)
+        video_segment = draft.VideoSegment(material = video_material,
+                                                        target_timerange  = trange(0, self.audioNowTime),
+                                                        volume=0
+                                                        )
+        # video_segment.add_animation(IntroType.轻微放大, 600000)
+        video_segment.add_animation(OutroType.渐隐, 600000)
+        self.script.add_segment(video_segment, 'BDTOP')
+
+        #印章
+        video_material = draft.VideoMaterial("./material/border/和光同尘.png")
+        video_duration = video_material.duration
+        self.script.add_material(video_material)
+        video_segment = draft.VideoSegment(material = video_material,
+                                                        target_timerange  = trange(0, self.audioNowTime),
+                                                        volume=0,
+                                                        clip_settings=draft.ClipSettings(
+                                                          transform_x=-0.90,
+                                                          transform_y=0.91,
+                                                           scale_x=0.04,
+                                                            scale_y=0.04)
+                                                        )
+        video_segment.add_animation(IntroType.轻微放大, 600000)
+        video_segment.add_animation(OutroType.渐隐, 600000)
+        self.script.add_segment(video_segment, 'SUBSY')
+        # AudioMaterial = draft.AudioMaterial(os.path.join(self.sfx_dir, "高音闪光转场.mp3"))
+        # sfx_audio_length = AudioMaterial.duration
+        # self.script.add_material(AudioMaterial)
+        # AudioSegment = draft.AudioSegment(AudioMaterial,
+        #                 trange(0, int(sfx_audio_length)),
+        #                 volume=1)
+        # self.script.add_segment(AudioSegment, 'SOUND')
+
+    def addItem(self) -> str:
+        for key,item in enumerate(self.list):
+            itemPeiyinNow = self.audioNowTime
+            audio_duration = 0
+            print(item['audio_patch'])
+            if os.path.exists(f"{item['audio_patch']}"):
+                # 音频
+                AudioMaterial = draft.AudioMaterial(os.path.join(f"{item['audio_patch']}"))
+                audio_length = AudioMaterial.duration
+                print(audio_length)
+                self.script.add_material(AudioMaterial)
+                AudioSegment = draft.AudioSegment(AudioMaterial,
+                                trange(int(itemPeiyinNow), int(audio_length)),
+                                volume=1)
+                self.script.add_segment(AudioSegment, 'TTS')
+                #背景
+                # video_material = draft.VideoMaterial(item['video_path'])
+                # video_duration = video_material.duration
+                # self.script.add_material(video_material)
+                # video_segment = draft.VideoSegment(material = video_material,
+                #                                                 target_timerange  = trange(int(itemPeiyinNow), int(audio_length)),
+                #                                                 volume=0)
+                # if key == 0:
+                #   video_segment.add_animation(IntroType.砸出波纹, 2000000)
+                #   self.addSound(sfx='空灵水滴.mp3')
+                # video_segment.add_transition(TransitionType.叠化, duration = 300000)
+                # video_segment.add_animation(IntroType.渐显, 100000)
+                # video_segment.add_animation(OutroType.渐隐, 100000)
+                # 交替使用BGV1和BGV2轨道
+                # track_name = 'BGV'
+                # self.script.add_segment(video_segment, track_name)
+
+                # 字幕
+                TextSegment = draft.TextSegment(f"{item['text']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新）
+                                        font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                        style=draft.TextStyle(color=(0.96, 0.96, 0.96), size=11),                # 设置字体颜色为黄色
+                                        # border=draft.TextBorder(color=(0, 0, 0)),
+                                        shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.9,diffuse = 26),
+                                        clip_settings=draft.ClipSettings(transform_y=-0.92, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                TextSegment.add_animation(TextIntro.渐显, 500000)
+                TextSegment.add_animation(TextOutro.渐隐, 500000)
+                self.script.add_segment(TextSegment, 'WENAN')
+
+                # 弹幕
+                if item['danmu']:
+                  match item['danmu_style']:
+                    case 'middle':
+                      TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                      font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                      style=draft.TextStyle(color=(1, 0.752, 0.239), size=22),                # 设置字体颜色为黄色
+                                      shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                      # border=draft.TextBorder(color=(0, 0, 0)),
+                                      clip_settings=draft.ClipSettings(transform_y=0, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                      TextSegment.add_animation(TextIntro.辉光, 1000000)
+                      TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                      self.addSound(sfx="高音闪光转场.mp3")
+                    case 'top':
+                      TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                      font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                      style=draft.TextStyle(color=(1, 1, 1), size=14),                # 设置字体颜色为黄色
+                                      shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                      # border=draft.TextBorder(color=(0, 0, 0)),
+                                      clip_settings=draft.ClipSettings(transform_y=-0.92, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                      TextSegment.add_animation(TextIntro.辉光, 1000000)
+                      TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                    case 'bottom':
+                      item['danmu'] = f"""{item['danmu']}"""
+                      # 统计item['danmu']中的换行符数量
+                      newline_count = item['danmu'].count('\n')
+                      print(f"当前弹幕换行符数量: {newline_count}")
+                      TextSegment = draft.TextSegment(item['danmu'], trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                      font=draft.FontType.三极行楷简体_粗,
+                                      border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
+                                      style=draft.TextStyle(
+                                        color=(1, 0.752, 0.239),
+                                        size=14,
+                                        align=3,
+                                        line_spacing = 10,
+                                        letter_spacing = 4),                # 设置字体颜色为黄色
+                                      shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                      # border=draft.TextBorder(color=(0, 0, 0)),
+                                      clip_settings=draft.ClipSettings(transform_y=-0.47, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                      TextSegment.add_animation(TextIntro.闪烁集合, 1000000)
+                      TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                      self.addSound(sfx="字幕显示短促.mp3", track='SFX')
+                    case 'left':
+                      item['danmu'] = f"""{item['danmu']}"""
+                      # 统计item['danmu']中的换行符数量
+                      newline_count = item['danmu'].count('\n')
+                      print(f"当前弹幕换行符数量: {newline_count}")
+                      item['danmu'] = '\n'.join(reversed(item['danmu'].splitlines()))
+                      TextSegment = draft.TextSegment(item['danmu'], trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                      font=draft.FontType.三极行楷简体_粗,
+                                      border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
+                                      style=draft.TextStyle(
+                                        color=(1, 0.752, 0.239),
+                                        size=6,
+                                        align=3,
+                                        vertical=True,
+                                        line_spacing = 10,
+                                        letter_spacing = 4),                # 设置字体颜色为黄色
+                                      shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                      # border=draft.TextBorder(color=(0, 0, 0)),
+                                      clip_settings=draft.ClipSettings(
+                                        transform_y=0.1, 
+                                        transform_x=-0.75 + 0.06 * newline_count
+                                        ))          # 模拟字幕的位置
+                      TextSegment.add_animation(TextIntro.羽化向右擦开, 3000000)
+                      TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                      self.addSound(sfx="字幕显示短促.mp3")
+                    case 'right':
+                      item['danmu'] = f"""{item['danmu']}"""
+                      # 统计item['danmu']中的换行符数量
+                      newline_count = item['danmu'].count('\n')
+                      print(f"当前弹幕换行符数量: {newline_count}")
+                      TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                      font=draft.FontType.三极行楷简体_粗,
+                                      border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
+                                      style=draft.TextStyle(
+                                        color=(1, 0.752, 0.239),
+                                        size=6,
+                                        align=2,
+                                        vertical=True,
+                                        line_spacing = 10,
+                                        letter_spacing = 4),                # 设置字体颜色为黄色
+                                      shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.5,diffuse = 15, distance = 5),
+                                      # border=draft.TextBorder(color=(0, 0, 0)),
+                                      clip_settings=draft.ClipSettings(
+                                        transform_y=0.1, 
+                                        transform_x=0.33
+                                        # transform_x=0.90 - 0.06 * newline_count
+                                        )
+                                      )
+                      TextSegment.add_animation(TextIntro.打字机_II, 3000000)
+                      TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                      self.addSound(sfx="字幕显示短促.mp3")
+                  
+                  self.script.add_segment(TextSegment, 'DANMU')
+
+                # 重置剪辑进度
+                itemPeiyinNow += audio_length
+                audio_duration+=audio_length
+                print(audio_duration/500000)
+                self.audioNowTime += audio_duration
+        return 'Success'
+    def addSound(self, sfx: str = "字幕显示短促.mp3", track: str = 'SOUND'):
+        if os.path.exists(os.path.join(self.sfx_dir, sfx)):
+          AudioMaterial = draft.AudioMaterial(os.path.join(self.sfx_dir, sfx))
+          sfx_audio_length = AudioMaterial.duration
+          self.script.add_material(AudioMaterial)
+          AudioSegment = draft.AudioSegment(AudioMaterial,
+                          trange(int(self.audioNowTime), int(sfx_audio_length)),
+                          volume=1)
+          self.script.add_segment(AudioSegment, track)
+
+    def addKeyword(self):
+        """
+        读取项目根目录下的 keywords_output.json，并将关键词作为弹幕添加到对应时间点的 DANMU 轨道
+        """
+        keywords_path = os.path.join(os.getcwd(), "keywords_output.json")
+        if not os.path.exists(keywords_path):
+            print("未找到 keywords_output.json，跳过关键词弹幕添加")
+            return
+
+        with open(keywords_path, "r", encoding="utf-8") as f:
+            try:
+                keywords_data = json.load(f)
+            except json.JSONDecodeError:
+                print("keywords_output.json 格式错误，跳过关键词弹幕添加")
+                return
+
+        # 期望格式: [{"time": 秒数, "keyword": "关键词"}, ...]
+        for item in keywords_data:
+            match item['type']:
+              case '0':
+                TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
+                                style=draft.TextStyle(color=(1, 0.752, 0.239), size=22),                # 设置字体颜色为黄色
+                                shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                # border=draft.TextBorder(color=(0, 0, 0)),
+                                clip_settings=draft.ClipSettings(transform_y=0, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                TextSegment.add_animation(TextIntro.辉光, 1000000)
+                TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                self.addSound(sfx="高音闪光转场.mp3")
+              case '1':
+                item['danmu'] = f"""{item['danmu']}"""
+                # 统计item['danmu']中的换行符数量
+                newline_count = item['danmu'].count('\n')
+                print(f"当前弹幕换行符数量: {newline_count}")
+                TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                font=draft.FontType.三极行楷简体_粗,
+                                border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
+                                style=draft.TextStyle(
+                                  color=(1, 0.752, 0.239),
+                                  size=6,
+                                  align=2,
+                                  vertical=True,
+                                  line_spacing = 10,
+                                  letter_spacing = 4),                # 设置字体颜色为黄色
+                                shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.5,diffuse = 15, distance = 5),
+                                # border=draft.TextBorder(color=(0, 0, 0)),
+                                clip_settings=draft.ClipSettings(
+                                  transform_y=0.1, 
+                                  transform_x=0.33
+                                  # transform_x=0.90 - 0.06 * newline_count
+                                  )
+                                )
+                TextSegment.add_animation(TextIntro.打字机_II, 3000000)
+                TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                self.addSound(sfx="字幕显示短促.mp3")
+              case 'bottom':
+                item['danmu'] = f"""{item['danmu']}"""
+                # 统计item['danmu']中的换行符数量
+                newline_count = item['danmu'].count('\n')
+                print(f"当前弹幕换行符数量: {newline_count}")
+                TextSegment = draft.TextSegment(item['danmu'], trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                font=draft.FontType.三极行楷简体_粗,
+                                border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
+                                style=draft.TextStyle(
+                                  color=(1, 0.752, 0.239),
+                                  size=14,
+                                  align=3,
+                                  line_spacing = 10,
+                                  letter_spacing = 4),                # 设置字体颜色为黄色
+                                shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                # border=draft.TextBorder(color=(0, 0, 0)),
+                                clip_settings=draft.ClipSettings(transform_y=-0.47, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
+                TextSegment.add_animation(TextIntro.闪烁集合, 1000000)
+                TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                self.addSound(sfx="字幕显示短促.mp3", track='SFX')
+              case 'left':
+                item['danmu'] = f"""{item['danmu']}"""
+                # 统计item['danmu']中的换行符数量
+                newline_count = item['danmu'].count('\n')
+                print(f"当前弹幕换行符数量: {newline_count}")
+                item['danmu'] = '\n'.join(reversed(item['danmu'].splitlines()))
+                TextSegment = draft.TextSegment(item['danmu'], trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                                font=draft.FontType.三极行楷简体_粗,
+                                border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
+                                style=draft.TextStyle(
+                                  color=(1, 0.752, 0.239),
+                                  size=6,
+                                  align=3,
+                                  vertical=True,
+                                  line_spacing = 10,
+                                  letter_spacing = 4),                # 设置字体颜色为黄色
+                                shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                                # border=draft.TextBorder(color=(0, 0, 0)),
+                                clip_settings=draft.ClipSettings(
+                                  transform_y=0.1, 
+                                  transform_x=-0.75 + 0.06 * newline_count
+                                  ))          # 模拟字幕的位置
+                TextSegment.add_animation(TextIntro.羽化向右擦开, 3000000)
+                TextSegment.add_animation(TextOutro.渐隐, 1000000)
+                self.addSound(sfx="字幕显示短促.mp3")
+            self.script.add_segment(TextSegment, 'DANMU')
+    def general_draft(self):
+        try:
+            self.addItem()
+            self.addBgm()
+            self.addKeyword()
+            # testObj.addVideo('bgv.mp4')
+            self.script.dump(self.output_dir + '/draft_content.json')
+            # # 导出
+            # ctrl = draft.JianyingController()
+            # 导出
+        except Exception as e:
+            print(f"生成草稿时发生错误: {str(e)}")
+            raise
+        return True

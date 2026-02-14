@@ -14,7 +14,7 @@ dashscope.base_http_api_url = 'https://dashscope.aliyuncs.com/api/v1'
 dashscope.api_key = os.getenv("ALI_KEY")
 
 
-def new_task(file_url: str) -> str:
+def new_task(file_path: str) -> str:
     url = 'https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription'
     headers = {
         "Authorization": f"Bearer {os.getenv('ALI_KEY')}",
@@ -23,7 +23,7 @@ def new_task(file_url: str) -> str:
         "X-DashScope-OssResourceResolve": "enable"
     }
     file_uploader = FileUploader(model_name='fun-asr')
-    file_url = file_uploader.upload('testAudio.mp3')
+    file_url = file_uploader.upload(file_path)
     payload = {
         "model": "fun-asr",
         "input": {
