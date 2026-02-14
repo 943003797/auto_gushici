@@ -289,7 +289,7 @@ class autoCut():
         for item in keywords_data:
             match item['type']:
               case '0':
-                TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                TextSegment = draft.TextSegment(f"{item['keyword']}", trange(int(item['begin_time']), int(item['end_time'])),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
                                 font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
                                 style=draft.TextStyle(color=(1, 0.752, 0.239), size=22),                # 设置字体颜色为黄色
                                 shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
@@ -303,7 +303,7 @@ class autoCut():
                 # 统计item['danmu']中的换行符数量
                 newline_count = item['danmu'].count('\n')
                 print(f"当前弹幕换行符数量: {newline_count}")
-                TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                TextSegment = draft.TextSegment(f"{item['danmu']}", trange(int(item['begin_time']*1000), int((item['end_time']-item['begin_time'])*1000)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
                                 font=draft.FontType.三极行楷简体_粗,
                                 border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
                                 style=draft.TextStyle(
@@ -329,7 +329,7 @@ class autoCut():
                 # 统计item['danmu']中的换行符数量
                 newline_count = item['danmu'].count('\n')
                 print(f"当前弹幕换行符数量: {newline_count}")
-                TextSegment = draft.TextSegment(item['danmu'], trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                TextSegment = draft.TextSegment(item['danmu'], trange(int(item['begin_time']*1000), int((item['end_time']-item['begin_time'])*1000)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
                                 font=draft.FontType.三极行楷简体_粗,
                                 border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
                                 style=draft.TextStyle(
@@ -350,7 +350,7 @@ class autoCut():
                 newline_count = item['danmu'].count('\n')
                 print(f"当前弹幕换行符数量: {newline_count}")
                 item['danmu'] = '\n'.join(reversed(item['danmu'].splitlines()))
-                TextSegment = draft.TextSegment(item['danmu'], trange(int(itemPeiyinNow), int(audio_length)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+                TextSegment = draft.TextSegment(item['danmu'], trange(int(item['begin_time']*1000), int((item['end_time']-item['begin_time'])*1000)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
                                 font=draft.FontType.三极行楷简体_粗,
                                 border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
                                 style=draft.TextStyle(
