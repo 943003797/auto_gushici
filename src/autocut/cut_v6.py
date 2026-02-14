@@ -288,8 +288,8 @@ class autoCut():
         # 期望格式: [{"time": 秒数, "keyword": "关键词"}, ...]
         for item in keywords_data:
             match item['type']:
-              case '0':
-                TextSegment = draft.TextSegment(f"{item['keyword']}", trange(int(item['begin_time']), int(item['end_time'])),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
+              case '0':#middle
+                TextSegment = draft.TextSegment(f"{item['keyword']}", trange(int(item['begin_time']*1000), int((item['end_time']-item['begin_time'])*1000)),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
                                 font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
                                 style=draft.TextStyle(color=(1, 0.752, 0.239), size=22),                # 设置字体颜色为黄色
                                 shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
@@ -298,7 +298,7 @@ class autoCut():
                 TextSegment.add_animation(TextIntro.辉光, 1000000)
                 TextSegment.add_animation(TextOutro.渐隐, 1000000)
                 self.addSound(sfx="高音闪光转场.mp3")
-              case '1':
+              case '1':#right
                 item['danmu'] = f"""{item['danmu']}"""
                 # 统计item['danmu']中的换行符数量
                 newline_count = item['danmu'].count('\n')
@@ -324,7 +324,7 @@ class autoCut():
                 TextSegment.add_animation(TextIntro.打字机_II, 3000000)
                 TextSegment.add_animation(TextOutro.渐隐, 1000000)
                 self.addSound(sfx="字幕显示短促.mp3")
-              case 'bottom':
+              case '2':
                 item['danmu'] = f"""{item['danmu']}"""
                 # 统计item['danmu']中的换行符数量
                 newline_count = item['danmu'].count('\n')
