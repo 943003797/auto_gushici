@@ -9,7 +9,7 @@ load_dotenv()
 
 
 class KeywordExtractor:
-    def __init__(self, input_file: str, output_file: str = None, extend_ms: int = 500):
+    def __init__(self, input_file: str, output_file: str = None, extend_ms: int = 0):
         self.input_file = input_file
         self.output_file = output_file or input_file.replace('.json', '_keywords.json')
         self.extend_ms = extend_ms
@@ -65,7 +65,7 @@ class KeywordExtractor:
 请提取需要强调的内容（返回JSON数组）："""
 
         response = Generation.call(
-            model=Generation.Models.qwen_plus,
+            model=Generation.Models.qwen_max,
             prompt=prompt,
             result_format='message'
         )
@@ -110,8 +110,8 @@ class KeywordExtractor:
                     'keyword': keyword,
                     'level': level,
                     'type': kw_type,
-                    'begin_time': begin_time,
-                    'end_time': end_time
+                    'begin_time': begin_time * 1000,
+                    'end_time': end_time * 1000
                 })
 
         return results
@@ -214,6 +214,6 @@ if __name__ == '__main__':
     extractor = KeywordExtractor(
         input_file='1.json',
         output_file='keywords_output.json',
-        extend_ms=500
+        extend_ms=0
     )
     extractor.run()

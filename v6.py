@@ -2,8 +2,9 @@ from cv2.gapi import video
 import gradio as gr, os, json
 
 from src.agent_v5 import format_content, process_complete_workflow, match_video, match_multiple_videos, delete_video
-from src.autocut.cut_v5 import autoCut
+from src.autocut.cut_v6 import autoCut
 from src.tts.cosyvoice.tts import TTS
+from src.ai_models.ali_model.audio import get_transcription_by_audio
 import time
 
 # 全局变量存储候选视频信息
@@ -200,6 +201,20 @@ def create_interface():
                     interactive=True,
                     elem_id="output_text"
                 )
+                
+                asr_button = gr.Button(
+                    value="🔊 ASR解析",
+                    variant="secondary",
+                    size="md",
+                    elem_id="asr_button"
+                )
+                
+                concat_audio_button = gr.Button(
+                    value="🔗 拼接完整音频",
+                    variant="secondary",
+                    size="md",
+                    elem_id="concat_audio_button"
+                )
             
             # 右侧：配音功能
             with gr.Column():
@@ -235,94 +250,26 @@ def create_interface():
                     )
 
                 with gr.Row():
-                    with gr.Column(scale=1):
-                        # 保留原有的主背景视频播放器
-                        tts_video_player = gr.Video(
-                            label="背景视频",
-                            interactive=False,
-                            elem_id="tts_video_player",
-                            scale=3,
-                            height=255
-                        )
-                    with gr.Column(scale=1):
-                        # 音频播放器
-                        tts_audio_player = gr.Audio(
-                            label="音频播放器",
-                            type="filepath",
-                            interactive=False,  # 确保音频播放器是可交互的
-                            elem_id="tts_audio_player",
-                            elem_classes=["audioplayer"],
-                            show_label=False
-                        )
-                        # 重新生成按钮
-                        regen_audio_button = gr.Button(
-                            value="🔄 重新生成",
-                            variant="secondary",
-                            size="lg",
-                            elem_id="regen_audio_button",
-                            scale=1,
-                            min_width=100,
-                            elem_classes=["matchvoice"]
-                        )
-                with gr.Row():
-                    # 视频数量选择器
-                    video_count_selector = gr.Dropdown(
-                        choices=[32, 40],
-                        value=40,
-                        label="📊 候选视频数量",
-                        interactive=True,
-                        elem_id="video_count_selector",
-                        elem_classes=["houxunvideo"],
-                        scale=1
-                    )
-                    search_text = gr.Text(
-                        label="📜 匹配文本",
-                        value="",
-                        interactive=True,
-                        elem_id="text",
+                    # 音频播放器
+                    tts_audio_player = gr.Audio(
+                        label="音频播放器",
+                        type="filepath",
+                        interactive=False,  # 确保音频播放器是可交互的
+                        elem_id="tts_audio_player",
+                        elem_classes=["audioplayer"],
+                        show_label=False,
+                        autoplay=True,
                         scale=3
                     )
-                    # 配视频按钮
-                    video_button = gr.Button(
-                        value="🎥 开始配视频 ③",
-                        variant="primary",
+                    # 重新生成按钮
+                    regen_audio_button = gr.Button(
+                        value="🔄 重新生成",
+                        variant="secondary",
                         size="lg",
-                        elem_id="video_button",
-                        elem_classes=["matchvideo"],
-                        scale=2
-                    )
-        # 弹幕配置区域
-        with gr.Row():
-            # 弹幕配置标题
-            with gr.Column(scale=1):
-                gr.Markdown("### 💬 弹幕配置")
-                with gr.Row():
-                # 弹幕文本输入框（重点标注）
-                    danmu_text_input = gr.TextArea(
-                        label="📝 弹幕文本",
-                        placeholder="请输入要显示的弹幕内容...",
-                        interactive=True,
-                        elem_id="danmu_text_input",
-                        scale=3,
-                        lines=4,
-                    )
-                    
-                    # 弹幕位置选择器
-                    danmu_position_dropdown = gr.Dropdown(
-                        choices=["请选择", "middle", "top", "bottom", "left", "right"],
-                        value="请选择",
-                        label="📍 弹幕位置",
-                        interactive=True,
-                        elem_id="danmu_position_dropdown"
-                    )
-            with gr.Column(scale=1):
-                gr.Markdown("📚 翻页")        
-                with gr.Row():
-                    now_text = gr.Text(
-                        label="📜 当前文案",
-                        value="",
-                        interactive=False,
-                        elem_id="text"
+                        elem_id="regen_audio_button",
+                        min_width=100,
+                        scale=1,
+                        elem_classes=["regeneralaudio"]
                     )
                 with gr.Row():
                     prev_button = gr.Button(
@@ -330,7 +277,6 @@ def create_interface():
                         variant="secondary",
                         size="lg",
                         elem_id="prev_button",
-                        scale=1,
                         min_width=100
                     )
                     next_button = gr.Button(    
@@ -338,8 +284,16 @@ def create_interface():
                         variant="primary",
                         size="lg",
                         elem_id="next_button",
-                        scale=1,
                         min_width=100
+                    )
+                with gr.Row():
+                    llm_danmu_textarea = gr.Textbox(
+                        label="LLM弹幕",
+                        placeholder="生成的弹幕内容将显示在这里...",
+                        lines=24,
+                        max_lines=24,
+                        interactive=True,
+                        elem_id="llm_danmu_textarea"
                     )
 
         # 候选视频区域
@@ -349,46 +303,7 @@ def create_interface():
         delete_buttons = []
         
         # 创建40个候选视频的布局（5行8列）
-        for row_start in range(0, 40, 8):
-            with gr.Row():
-                for i in range(row_start + 1, min(row_start + 9, 41)):
-                    with gr.Column(elem_classes=["width350"], min_width=50):
-                        # 视频播放器
-                        video_player = gr.Video(
-                            label=f"候选视频 {i}",
-                            interactive=False,
-                            elem_id=f"candidate_video_{i}",
-                            height=150,  # 减少高度以适应更多视频
-                            autoplay=False,
-                            loop=False,
-                            include_audio=False
-                        )
-                        candidate_videos.append(video_player)
-                        
-                        # 选择和删除按钮布局
-                        with gr.Row():
-                            # 选择按钮（3/4宽度）
-                            select_button = gr.Button(
-                                value=f"选择",
-                                variant="secondary",
-                                size="sm",
-                                elem_id=f"select_video_{i}",
-                                scale=3,
-                                min_width=75
-                            )
-                            candidate_buttons.append(select_button)
-                            
-                            # 删除按钮（1/4宽度）
-                            delete_button = gr.Button(
-                                value="删除",
-                                variant="stop",
-                                size="sm",
-                                elem_id=f"delete_video_{i}",
-                                scale=1,
-                                min_width=25
-                            )
-                            delete_buttons.append(delete_button)
-        
+
         # 存储候选视频信息的隐藏组件
         candidate_videos_info = gr.Textbox(
             label="候选视频信息",
@@ -429,10 +344,99 @@ def create_interface():
         )
 
         # 生成草稿
-        def general_draft(topic_input, output_text, bgm_name):
-            # 调用草稿生成函数
+        def general_draft(topic_input, output_text, bgm_name, llm_danmu_json):
+            import re
+            
+            keywords_output_path = None
+            
+            if llm_danmu_json and llm_danmu_json.strip():
+                try:
+                    keywords_data = json.loads(llm_danmu_json)
+                    
+                    asr_path = f"draft/JianyingPro Drafts/{topic_input}/Resources/audioAlg/asr.json"
+                    
+                    if os.path.exists(asr_path):
+                        with open(asr_path, 'r', encoding='utf-8') as f:
+                            asr_data = json.load(f)
+                        
+                        all_words = []
+                        for sentence in asr_data.get('transcripts', [{}])[0].get('sentences', []):
+                            for word in sentence.get('words', []):
+                                all_words.append(word)
+                        
+                        def find_matching_words(keyword):
+                            all_text = ''.join([w['text'] for w in all_words])
+                            
+                            if keyword in all_text:
+                                start_idx = all_text.index(keyword)
+                                char_count = 0
+                                for i, word_info in enumerate(all_words):
+                                    char_count += len(word_info['text'])
+                                    if char_count > start_idx:
+                                        matched = [word_info]
+                                        target_len = len(keyword)
+                                        current_len = len(word_info['text'])
+                                        j = i + 1
+                                        while current_len < target_len and j < len(all_words):
+                                            matched.append(all_words[j])
+                                            current_len += len(all_words[j]['text'])
+                                            j += 1
+                                        return matched
+                            
+                            best_match = None
+                            best_len = 0
+                            for word_info in all_words:
+                                word_text = word_info['text']
+                                if keyword in word_text and len(keyword) >= 2:
+                                    if len(word_text) > best_len:
+                                        best_len = len(word_text)
+                                        best_match = word_info
+                            
+                            return [best_match] if best_match else []
+                        
+                        results = []
+                        for kw_item in keywords_data:
+                            if isinstance(kw_item, dict):
+                                keyword = kw_item.get('keyword', '')
+                                level = kw_item.get('level', 3)
+                                kw_type = kw_item.get('type', 2)
+                            else:
+                                keyword = kw_item
+                                level = 3
+                                kw_type = 2
+                            
+                            matched_words = find_matching_words(keyword)
+                            
+                            if matched_words:
+                                begin_time = matched_words[0]['begin_time']
+                                end_time = matched_words[-1]['end_time']
+                                extend_ms = 0
+                                
+                                results.append({
+                                    'keyword': keyword,
+                                    'level': level,
+                                    'type': kw_type,
+                                    'begin_time': begin_time * 1000,
+                                    'end_time': (end_time + extend_ms) * 1000
+                                })
+                        
+                        results.sort(key=lambda x: x['begin_time'])
+                        
+                        keywords_output_path = f"draft/JianyingPro Drafts/{topic_input}/Resources/audioAlg/keywords_output.json"
+                        os.makedirs(os.path.dirname(keywords_output_path), exist_ok=True)
+                        
+                        with open(keywords_output_path, 'w', encoding='utf-8') as f:
+                            json.dump(results, f, ensure_ascii=False, indent=2)
+                        
+                        print(f"关键词文件已生成: {keywords_output_path}")
+                    
+                except json.JSONDecodeError as e:
+                    print(f"用户关键词JSON解析失败: {e}")
+                except Exception as e:
+                    print(f"生成关键词文件失败: {e}")
+            
             bgm_file = bgm_name if bgm_name and bgm_name != "无" else ""
-            cut = autoCut(title=topic_input, list=output_text, bgm=bgm_file)
+            cut = autoCut(title=topic_input, list=output_text, bgm=bgm_file, keywords_path=keywords_output_path)
             result = cut.general_draft()
             if result:
                 bgm_display = bgm_name.replace('.mp3', '') if bgm_name and bgm_name != "无" else "无"
@@ -442,22 +446,164 @@ def create_interface():
 
         general_button.click(
             fn=general_draft,
-            inputs=[topic_input, output_text, bgm_dropdown],
+            inputs=[topic_input, output_text, bgm_dropdown, llm_danmu_textarea],
             outputs=[result_text]
         )
         
         # 绑定按钮点击事件
         format_button.click(
             fn=format_text,
-            inputs=input_text,
-            outputs=output_text
+            inputs=[input_text],
+            outputs=[output_text]
+        )
+        
+        # ASR解析按钮处理函数
+        def asr_parse(topic_name, output_data):
+            if not topic_name or not topic_name.strip():
+                return "请先输入主题名称", ""
+            
+            if not output_data or not output_data.strip():
+                return "没有可用的格式化数据", ""
+            
+            try:
+                audio_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/wenan.mp3"
+                
+                if not os.path.exists(audio_path):
+                    return f"音频文件不存在: {audio_path}", ""
+                
+                result = get_transcription_by_audio(audio_path)
+                
+                save_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/asr.json"
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                
+                with open(save_path, 'w', encoding='utf-8') as f:
+                    json.dump(result, f, ensure_ascii=False, indent=2)
+                
+                sentences = result.get('transcripts', [{}])[0].get('sentences', [])
+                sentences_text = ""
+                for i, sentence in enumerate(sentences):
+                    sentences_text += f"第{i+1}句: {sentence['text']}\n"
+                
+                prompt = f"""请为每句话提取需要强调显示的内容，这些内容用于在视频画面上显示以引导观众注意力。
+
+要求：
+1. 每句话提取1个关键词或短句，数量与句子数量一致
+2. 强调词/短句控制在 2-6 个字为宜，最多不超过8个字
+3. 短句示例：如"元和十年"、"永州城外"等来自原文的精炼短句
+4. 每个内容需要标注重要等级和类型：
+   - level: 重要等级
+     - 0级: 诗句或古文原文（如"千山鸟飞绝，万径人踪灭"，这是最高优先级，不限制长度）
+     - 1级: 关键地点、诗句名字、关键事件、时间地点短语（如"元和十年"、"永州"）
+     - 2级: 情感关键词
+     - 3级: 其它值得强调的内容
+   - type: 内容类型
+     - 0: 诗名（如"江雪"）
+     - 1: 诗句（如"千山鸟飞绝"、"孤舟蓑笠翁"）
+     - 2: 其它关键词
+5. 返回格式为 JSON 数组，每个元素包含 keyword、level 和 type 字段
+6. keyword 必须是文案中存在的原句或词语，不要编造
+7. 如果是诗句，请用换行符分割每句（如"千山鸟飞绝\\n万径人踪灭"）
+8. 只返回 JSON 数组，不要其他内容
+
+句子内容：
+{sentences_text}
+
+请提取需要强调的内容（返回JSON数组）："""
+                
+                prompt_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/keywords_prompt.txt"
+                with open(prompt_path, 'w', encoding='utf-8') as f:
+                    f.write(prompt)
+                
+                return f"ASR解析完成！提示词已生成并保存", prompt
+                
+            except Exception as e:
+                return f"ASR解析失败: {str(e)}", ""
+        
+        asr_button.click(
+            fn=asr_parse,
+            inputs=[topic_input, output_text],
+            outputs=[result_text, llm_danmu_textarea]
+        )
+        
+        # 拼接完整音频按钮处理函数
+        def concat_audio(topic_name, output_data):
+            if not topic_name or not topic_name.strip():
+                return "请先输入主题名称"
+            
+            if not output_data or not output_data.strip():
+                return "没有可用的格式化数据"
+            
+            try:
+                target_dir = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg"
+                
+                if not os.path.exists(target_dir):
+                    return f"音频目录不存在: {target_dir}"
+                
+                audio_files = [f for f in os.listdir(target_dir) if f.endswith('.mp3') and f != 'wenan.mp3']
+                
+                if not audio_files:
+                    return "没有找到需要拼接的音频文件"
+                
+                audio_files_sorted = sorted(audio_files, key=lambda x: int(x.split('.')[0]) if x.split('.')[0].isdigit() else 0)
+                
+                if len(audio_files_sorted) == 1:
+                    src_path = os.path.join(target_dir, audio_files_sorted[0])
+                    dst_path = os.path.join(target_dir, "wenan.mp3")
+                    import shutil
+                    shutil.copy2(src_path, dst_path)
+                    return f"单个音频文件已复制为 wenan.mp3"
+                else:
+                    import subprocess
+                    import json
+                    
+                    first_audio_path = os.path.join(target_dir, audio_files_sorted[0])
+                    
+                    probe_result = subprocess.run([
+                        'ffprobe', '-v', 'quiet', '-print_format', 'json',
+                        '-show_format', first_audio_path
+                    ], capture_output=True, text=True)
+                    
+                    probe_data = json.loads(probe_result.stdout)
+                    audio_format = probe_data.get('format', {})
+                    
+                    audio_bitrate = audio_format.get('bit_rate') or '192k'
+                    sample_rate = audio_format.get('sample_rate') or '44100'
+                    
+                    temp_list_file = os.path.join(target_dir, "concat_list.txt")
+                    with open(temp_list_file, 'w', encoding='utf-8') as f:
+                        for audio_file in audio_files_sorted:
+                            f.write(f"file '{audio_file}'\n")
+                    
+                    output_path = os.path.join(target_dir, "wenan.mp3")
+                    result = subprocess.run([
+                        'ffmpeg', '-y', '-f', 'concat', '-safe', '0',
+                        '-i', temp_list_file,
+                        '-b:a', str(audio_bitrate),
+                        '-ar', str(sample_rate),
+                        output_path
+                    ], capture_output=True, text=True)
+                    
+                    os.remove(temp_list_file)
+                    
+                    if result.returncode == 0:
+                        return f"音频拼接完成！已生成 wenan.mp3，共 {len(audio_files_sorted)} 个片段"
+                    else:
+                        return f"音频拼接失败: {result.stderr}"
+                
+            except Exception as e:
+                return f"拼接失败: {str(e)}"
+        
+        concat_audio_button.click(
+            fn=concat_audio,
+            inputs=[topic_input, output_text],
+            outputs=[result_text]
         )
         
         # 绑定音频选择变化事件
         def update_tts_audio_preview(choice, topic_name, output_data):
             # 如果是"请选择"，直接返回 None
             if choice == "请选择":
-                return None, None, ""
+                return None
             
             audio_path = None
             video_path = None
@@ -496,12 +642,12 @@ def create_interface():
                     print(f"[ERROR] 解析JSON数据时出错: {e}")
                     print(f"[DEBUG] 原始输出数据: {output_data[:500]}...")
             
-            return audio_path, video_path, text_content
+            return audio_path
         
         tts_dropdown.change(
             fn=update_tts_audio_preview,
             inputs=[tts_dropdown, topic_input, output_text],
-            outputs=[tts_audio_player, tts_video_player, now_text]
+            outputs=[tts_audio_player]
         )
         
         # 弹幕文本输入和位置选择事件处理
@@ -568,19 +714,6 @@ def create_interface():
             # 这个函数主要用于保存弹幕文本输入状态
             # 实际的格式化结果更新在位置选择器change时触发
             return output_data
-        
-        danmu_text_input.change(
-            fn=update_danmu_text_only,
-            inputs=[danmu_text_input, tts_dropdown, output_text],
-            outputs=[output_text]
-        )
-        
-        # 绑定弹幕位置选择事件（主要更新逻辑）
-        danmu_position_dropdown.change(
-            fn=update_danmu_config,
-            inputs=[danmu_text_input, danmu_position_dropdown, tts_dropdown, output_text],
-            outputs=[output_text]
-        )
         
         # 绑定配音按钮点击事件
         def voice_generation_with_updates(content, topic_name):
@@ -806,16 +939,16 @@ def create_interface():
         
         # 绑定上一条按钮点击事件
         prev_button.click(
-            fn=go_to_prev_item,
+            fn=lambda choice, data: go_to_prev_item(choice, data)[0],
             inputs=[tts_dropdown, output_text],
-            outputs=[tts_dropdown, now_text]
+            outputs=[tts_dropdown]
         )
         
         # 绑定下一条按钮点击事件
         next_button.click(
-            fn=go_to_next_item,
+            fn=lambda choice, data: go_to_next_item(choice, data)[0],
             inputs=[tts_dropdown, output_text],
-            outputs=[tts_dropdown, now_text]
+            outputs=[tts_dropdown]
         )
         
         # 重新生成按钮的事件处理
@@ -1128,39 +1261,6 @@ def create_interface():
                     return None, None, error_message
             
             return delete_video_handler
-
-        # 为每个选择按钮绑定事件（支持40个候选视频）
-        for i in range(40):
-            selection_handler = create_video_selection_handler(i)
-            candidate_buttons[i].click(
-                fn=selection_handler,
-                inputs=[output_text],
-                outputs=[tts_video_player, output_text]
-            )
-            
-            # 为对应的删除按钮绑定事件
-            deletion_handler = create_video_deletion_handler(i)
-            delete_buttons[i].click(
-                fn=deletion_handler,
-                inputs=[],
-                outputs=[candidate_videos[i], candidate_videos_info, result_text]
-            )
-            
-
-        
-        video_button.click(
-            fn=match_video_for_selection,
-            inputs=[tts_dropdown, topic_input, output_text, video_count_selector, search_text],
-            outputs=[candidate_videos[0], candidate_videos[1], candidate_videos[2], candidate_videos[3], candidate_videos[4],
-                    candidate_videos[5], candidate_videos[6], candidate_videos[7], candidate_videos[8], candidate_videos[9],
-                    candidate_videos[10], candidate_videos[11], candidate_videos[12], candidate_videos[13], candidate_videos[14],
-                    candidate_videos[15], candidate_videos[16], candidate_videos[17], candidate_videos[18], candidate_videos[19],
-                    candidate_videos[20], candidate_videos[21], candidate_videos[22], candidate_videos[23], candidate_videos[24],
-                    candidate_videos[25], candidate_videos[26], candidate_videos[27], candidate_videos[28], candidate_videos[29],
-                    candidate_videos[30], candidate_videos[31], candidate_videos[32], candidate_videos[33], candidate_videos[34],
-                    candidate_videos[35], candidate_videos[36], candidate_videos[37], candidate_videos[38], candidate_videos[39],
-                    output_text, candidate_videos_info, tts_video_player, search_text]
-        )
         
         # 添加示例文案
         gr.Examples(
@@ -1182,6 +1282,7 @@ if __name__ == "__main__":
     .width350 {width: 350px;}
     .width450 {width: 450px;}
     .matchvoice {height: 89px;}
+    .regeneralaudio {height: 148px;}
     .audioplayer {height: 150px;}
     .houxunvideo {height: 87px;}
     .matchvideo {height: 87px;}

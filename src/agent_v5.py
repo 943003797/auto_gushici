@@ -2,6 +2,7 @@ import json, os, shutil
 import math
 from mutagen import File
 from mutagen.wave import WAVE
+from moviepy import AudioFileClip
 from src.tts.cosyvoice.tts import TTS
 from src.ai_models.big_model.llm import LLM
 from src.vector.vectordb import VectorDB
@@ -273,6 +274,64 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
                         # 更新audio_patch为音频文件名（相对路径）
                         item['audio_patch'] = os.path.basename(result['audio_path'])
                     break
+        #生成拼接音频
+        if success_count > 0:
+            sorted_data = sorted(structured_data, key=lambda x: x['id'])
+            audio_clips = []
+            for item in sorted_data:
+                if item.get('audio_patch') and item.get('video_path'):
+                    audio_path = os.path.join(target_dir, item['audio_patch'])
+                    if os.path.exists(audio_path):
+                        try:
+                            clip = AudioFileClip(audio_path)
+                            audio_clips.append(clip)
+                        except Exception as e:
+                            print(f"加载音频文件失败 {audio_path}: {e}")
+            
+            if audio_clips:
+                try:
+                    output_path = os.path.join(target_dir, "wenan.mp3")
+                    
+                    if len(audio_clips) == 1:
+                        audio_clips[0].write_audiofile(output_path, logger=None)
+                    else:
+                        import subprocess
+                        
+                        first_audio = audio_clips[0].filename
+                        
+                        probe_result = subprocess.run([
+                            'ffprobe', '-v', 'quiet', '-print_format', 'json',
+                            '-show_format', first_audio
+                        ], capture_output=True, text=True)
+                        
+                        import json as json_lib
+                        probe_data = json_lib.loads(probe_result.stdout)
+                        audio_format = probe_data.get('format', {})
+                        
+                        audio_bitrate = audio_format.get('bit_rate') or '192k'
+                        sample_rate = audio_format.get('sample_rate') or '44100'
+                        
+                        temp_list_file = os.path.join(target_dir, "concat_list.txt")
+                        with open(temp_list_file, 'w', encoding='utf-8') as f:
+                            for clip in audio_clips:
+                                filename = os.path.basename(clip.filename)
+                                f.write(f"file '{filename}'\n")
+                        
+                        ffmpeg_args = [
+                            'ffmpeg', '-y', '-f', 'concat', '-safe', '0',
+                            '-i', temp_list_file,
+                            '-b:a', str(audio_bitrate),
+                            '-ar', str(sample_rate),
+                            output_path
+                        ]
+                        
+                        subprocess.run(ffmpeg_args, capture_output=True)
+                        
+                        os.remove(temp_list_file)
+                    
+                    print(f"拼接音频已保存到: {output_path}")
+                except Exception as e:
+                    print(f"拼接音频失败: {e}")
         
         # 返回结果
         return {
@@ -324,6 +383,7 @@ def process_complete_workflow(content, topic_name, voice_id="风吟"):
             "copy_result": {"success": copy_success},
             "voice_result": voice_result
         }
+
         
     except Exception as e:
         return {"status": "error", "message": f"工作流执行失败: {e}"}
