@@ -312,8 +312,8 @@ class autoCut():
               print(f"当前: {int(item['begin_time'])}-{int((item['end_time']-item['begin_time'])) + self.danmu_extend_ms}")
               TextSegment = draft.TextSegment(f"{item['keyword']}", trange(int(item['begin_time']), int((item['end_time']-item['begin_time'])) + self.danmu_extend_ms),  # 文本将持续整个视频（注意script.duration在上方片段添加到轨道后才会自动更新） 
                               font=draft.FontType.三极行楷简体_粗,                                  # 设置字体为文轩体
-                              style=draft.TextStyle(color=(1, 0.752, 0.239), size=22),                # 设置字体颜色为黄色
-                              shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                              style=draft.TextStyle(color=(1, 0.949, 0), size=22),                # 设置字体颜色为黄色
+                              # shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
                               # border=draft.TextBorder(color=(0, 0, 0)),
                               clip_settings=draft.ClipSettings(transform_y=0, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
               TextSegment.add_animation(TextIntro.辉光, 1000000)
@@ -330,13 +330,13 @@ class autoCut():
                               font=draft.FontType.三极行楷简体_粗,
                               border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
                               style=draft.TextStyle(
-                                color=(1, 0.752, 0.239),
+                                color=(1, 0.949, 0),
                                 size=6,
                                 align=2,
                                 vertical=True,
                                 line_spacing = 10,
                                 letter_spacing = 4),                # 设置字体颜色为黄色
-                              shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.5,diffuse = 15, distance = 5),
+                              # shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.5,diffuse = 15, distance = 5),
                               # border=draft.TextBorder(color=(0, 0, 0)),
                               clip_settings=draft.ClipSettings(
                                 transform_y=0.1, 
@@ -360,12 +360,12 @@ class autoCut():
                               font=draft.FontType.三极行楷简体_粗,
                               border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
                               style=draft.TextStyle(
-                                color=(1, 0.752, 0.239),
+                                color=(1, 0.949, 0),
                                 size=14,
                                 align=3,
                                 line_spacing = 10,
                                 letter_spacing = 4),                # 设置字体颜色为黄色
-                              shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                              # shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
                               # border=draft.TextBorder(color=(0, 0, 0)),
                               clip_settings=draft.ClipSettings(transform_y=-0.47, transform_x=0, scale_x=0.45, scale_y=0.45))          # 模拟字幕的位置
               TextSegment.add_animation(TextIntro.闪烁集合, 1000000)
@@ -385,13 +385,13 @@ class autoCut():
                               font=draft.FontType.三极行楷简体_粗,
                               border=draft.TextBorder(color=(0.172, 0.184, 0.231)),
                               style=draft.TextStyle(
-                                color=(1, 0.752, 0.239),
+                                color=(1, 0.949, 0),
                                 size=6,
                                 align=3,
                                 vertical=True,
                                 line_spacing = 10,
                                 letter_spacing = 4),                # 设置字体颜色为黄色
-                              shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
+                              # shadow=draft.TextShadow(color=(0, 0, 0),alpha=0.8,diffuse = 15),
                               # border=draft.TextBorder(color=(0, 0, 0)),
                               clip_settings=draft.ClipSettings(
                                 transform_y=0.1, 
