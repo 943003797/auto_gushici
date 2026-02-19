@@ -35,7 +35,7 @@ def regenerate_audio_for_sentence(text: str, sentence_id: int, topic_name: str) 
         os.makedirs(target_dir, exist_ok=True)
         
         # 初始化TTS
-        tts = TTS(voice_id="刘涛", speech_rate=1.2)
+        tts = TTS(voice_id="刘涛", speech_rate=1.0)
         
         # 生成音频文件名
         audio_filename = f"{sentence_id}.mp3"
@@ -353,82 +353,36 @@ def create_interface():
                 try:
                     keywords_data = json.loads(llm_danmu_json)
                     
-                    asr_path = f"draft/JianyingPro Drafts/{topic_input}/Resources/audioAlg/asr.json"
+                    results = []
+                    for kw_item in keywords_data:
+                        if isinstance(kw_item, dict):
+                            keyword = kw_item.get('keyword', '')
+                            level = kw_item.get('level', 3)
+                            kw_type = kw_item.get('type', 2)
+                            begin_time = kw_item.get('begin_time', 0)
+                            end_time = kw_item.get('end_time', 0)
+                        else:
+                            keyword = kw_item
+                            level = 3
+                            kw_type = 2
+                            begin_time = 0
+                            end_time = 0
+                        
+                        results.append({
+                            'keyword': keyword,
+                            'level': level,
+                            'type': kw_type,
+                            'begin_time': begin_time,
+                            'end_time': end_time
+                        })
                     
-                    if os.path.exists(asr_path):
-                        with open(asr_path, 'r', encoding='utf-8') as f:
-                            asr_data = json.load(f)
-                        
-                        all_words = []
-                        for sentence in asr_data.get('transcripts', [{}])[0].get('sentences', []):
-                            for word in sentence.get('words', []):
-                                all_words.append(word)
-                        
-                        def find_matching_words(keyword):
-                            all_text = ''.join([w['text'] for w in all_words])
-                            
-                            if keyword in all_text:
-                                start_idx = all_text.index(keyword)
-                                char_count = 0
-                                for i, word_info in enumerate(all_words):
-                                    char_count += len(word_info['text'])
-                                    if char_count > start_idx:
-                                        matched = [word_info]
-                                        target_len = len(keyword)
-                                        current_len = len(word_info['text'])
-                                        j = i + 1
-                                        while current_len < target_len and j < len(all_words):
-                                            matched.append(all_words[j])
-                                            current_len += len(all_words[j]['text'])
-                                            j += 1
-                                        return matched
-                            
-                            best_match = None
-                            best_len = 0
-                            for word_info in all_words:
-                                word_text = word_info['text']
-                                if keyword in word_text and len(keyword) >= 2:
-                                    if len(word_text) > best_len:
-                                        best_len = len(word_text)
-                                        best_match = word_info
-                            
-                            return [best_match] if best_match else []
-                        
-                        results = []
-                        for kw_item in keywords_data:
-                            if isinstance(kw_item, dict):
-                                keyword = kw_item.get('keyword', '')
-                                level = kw_item.get('level', 3)
-                                kw_type = kw_item.get('type', 2)
-                            else:
-                                keyword = kw_item
-                                level = 3
-                                kw_type = 2
-                            
-                            matched_words = find_matching_words(keyword)
-                            
-                            if matched_words:
-                                begin_time = matched_words[0]['begin_time']
-                                end_time = matched_words[-1]['end_time']
-                                extend_ms = 0
-                                
-                                results.append({
-                                    'keyword': keyword,
-                                    'level': level,
-                                    'type': kw_type,
-                                    'begin_time': begin_time * 1000,
-                                    'end_time': (end_time + extend_ms) * 1000
-                                })
-                        
-                        results.sort(key=lambda x: x['begin_time'])
-                        
-                        keywords_output_path = f"draft/JianyingPro Drafts/{topic_input}/Resources/audioAlg/keywords_output.json"
-                        os.makedirs(os.path.dirname(keywords_output_path), exist_ok=True)
-                        
-                        with open(keywords_output_path, 'w', encoding='utf-8') as f:
-                            json.dump(results, f, ensure_ascii=False, indent=2)
-                        
-                        print(f"关键词文件已生成: {keywords_output_path}")
+                    keywords_output_path = f"draft/JianyingPro Drafts/{topic_input}/Resources/audioAlg/keywords_output.json"
+                    os.makedirs(os.path.dirname(keywords_output_path), exist_ok=True)
+                    
+                    with open(keywords_output_path, 'w', encoding='utf-8') as f:
+                        json.dump(results, f, ensure_ascii=False, indent=2)
+                    
+                    print(f"关键词文件已生成: {keywords_output_path}")
                     
                 except json.JSONDecodeError as e:
                     print(f"用户关键词JSON解析失败: {e}")
@@ -767,6 +721,12 @@ def create_interface():
                             })
                         
                         formatted_json = json.dumps(result_data, ensure_ascii=False, indent=2)
+                        
+                        keywords_json_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/keywords.json"
+                        os.makedirs(os.path.dirname(keywords_json_path), exist_ok=True)
+                        with open(keywords_json_path, 'w', encoding='utf-8') as f:
+                            json.dump(result_data, f, ensure_ascii=False, indent=2)
+                        print(f"[INFO] keywords.json 已保存到: {keywords_json_path}")
                     else:
                         formatted_json = ""
                     
