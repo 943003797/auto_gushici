@@ -55,6 +55,7 @@ catch/
 # Translations
 *.mo
 *.pot
+*.psd
 
 # Django stuff:
 *.log
