@@ -287,15 +287,12 @@ class autoCut():
     def addKeyword(self):
         """
         读取关键词JSON文件，并将关键词作为弹幕添加到对应时间点的 DANMU 轨道
-        支持从self.keywords_path读取自定义关键词，或回退到默认路径
+        从self.keywords_path读取自定义关键词
         """
-        if self.keywords_path and os.path.exists(self.keywords_path):
-            keywords_path = self.keywords_path
-        else:
-            keywords_path = os.path.join(os.getcwd(), "keywords_output.json")
-            if not os.path.exists(keywords_path):
-                print("未找到 keywords_output.json，跳过关键词弹幕添加")
-                return
+        if not self.keywords_path or not os.path.exists(self.keywords_path):
+            print("未找到关键词文件，跳过关键词弹幕添加")
+            return
+        keywords_path = self.keywords_path
 
         with open(keywords_path, "r", encoding="utf-8") as f:
             try:

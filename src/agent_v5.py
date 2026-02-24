@@ -222,7 +222,7 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
         os.makedirs(target_dir, exist_ok=True)
         
         # 初始化TTS
-        tts = TTS(voice_id="刘涛", speech_rate=1.2)
+        tts = TTS(voice_id="刘涛慢速", speech_rate=1.1)
         
         results = []
         success_count = 0
@@ -231,7 +231,7 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
         for item in structured_data:
             sentence_id = item['id']
             text = item['text']
-            audio_filename = f"{sentence_id}.mp3"  # 生成音频文件名，如001.wav
+            audio_filename = f"{sentence_id}.wav"
             
             try:
                 # 生成音频文件
@@ -290,44 +290,33 @@ def generate_voice_for_content(formatted_json_str, topic_name, voice_id="风吟"
             
             if audio_clips:
                 try:
-                    output_path = os.path.join(target_dir, "wenan.mp3")
+                    output_path = os.path.join(target_dir, "wenan.wav")
                     
                     if len(audio_clips) == 1:
                         audio_clips[0].write_audiofile(output_path, logger=None)
                     else:
-                        import subprocess
+                        import wave
                         
-                        first_audio = audio_clips[0].filename
+                        file_list = [clip.filename for clip in audio_clips]
                         
-                        probe_result = subprocess.run([
-                            'ffprobe', '-v', 'quiet', '-print_format', 'json',
-                            '-show_format', first_audio
-                        ], capture_output=True, text=True)
+                        with wave.open(file_list[0], 'rb') as first:
+                            nchannels = first.getnchannels()
+                            sampwidth = first.getsampwidth()
+                            framerate = first.getframerate()
+                            all_frames = first.readframes(first.getnframes())
                         
-                        import json as json_lib
-                        probe_data = json_lib.loads(probe_result.stdout)
-                        audio_format = probe_data.get('format', {})
+                        for file in file_list[1:]:
+                            with wave.open(file, 'rb') as f:
+                                if f.getnchannels() != nchannels or f.getsampwidth() != sampwidth or f.getframerate() != framerate:
+                                    print(f"警告: 音频参数不一致！参考文件: {file_list[0]}, 当前文件: {file}")
+                                    continue
+                                all_frames += f.readframes(f.getnframes())
                         
-                        audio_bitrate = audio_format.get('bit_rate') or '192k'
-                        sample_rate = audio_format.get('sample_rate') or '44100'
-                        
-                        temp_list_file = os.path.join(target_dir, "concat_list.txt")
-                        with open(temp_list_file, 'w', encoding='utf-8') as f:
-                            for clip in audio_clips:
-                                filename = os.path.basename(clip.filename)
-                                f.write(f"file '{filename}'\n")
-                        
-                        ffmpeg_args = [
-                            'ffmpeg', '-y', '-f', 'concat', '-safe', '0',
-                            '-i', temp_list_file,
-                            '-b:a', str(audio_bitrate),
-                            '-ar', str(sample_rate),
-                            output_path
-                        ]
-                        
-                        subprocess.run(ffmpeg_args, capture_output=True)
-                        
-                        os.remove(temp_list_file)
+                        with wave.open(output_path, 'wb') as output:
+                            output.setnchannels(nchannels)
+                            output.setsampwidth(sampwidth)
+                            output.setframerate(framerate)
+                            output.writeframes(all_frames)
                     
                     print(f"拼接音频已保存到: {output_path}")
                 except Exception as e:

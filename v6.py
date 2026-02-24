@@ -35,10 +35,10 @@ def regenerate_audio_for_sentence(text: str, sentence_id: int, topic_name: str) 
         os.makedirs(target_dir, exist_ok=True)
         
         # 初始化TTS
-        tts = TTS(voice_id="刘涛", speech_rate=1.0)
+        tts = TTS(voice_id="刘涛慢速", speech_rate=1.0)
         
         # 生成音频文件名
-        audio_filename = f"{sentence_id}.mp3"
+        audio_filename = f"{sentence_id}.wav"
         audio_path = os.path.join(target_dir, audio_filename)
         
         # 生成音频文件
@@ -420,7 +420,7 @@ def create_interface():
                 return "没有可用的格式化数据", ""
             
             try:
-                audio_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/wenan.mp3"
+                audio_path = f"draft/JianyingPro Drafts/{topic_name}/Resources/audioAlg/wenan.wav"
                 
                 if not os.path.exists(audio_path):
                     return f"音频文件不存在: {audio_path}", ""
@@ -493,7 +493,7 @@ def create_interface():
                 if not os.path.exists(target_dir):
                     return f"音频目录不存在: {target_dir}"
                 
-                audio_files = [f for f in os.listdir(target_dir) if f.endswith('.mp3') and f != 'wenan.mp3']
+                audio_files = [f for f in os.listdir(target_dir) if f.endswith('.wav') and f != 'wenan.wav']
                 
                 if not audio_files:
                     return "没有找到需要拼接的音频文件"
@@ -502,47 +502,35 @@ def create_interface():
                 
                 if len(audio_files_sorted) == 1:
                     src_path = os.path.join(target_dir, audio_files_sorted[0])
-                    dst_path = os.path.join(target_dir, "wenan.mp3")
+                    dst_path = os.path.join(target_dir, "wenan.wav")
                     import shutil
                     shutil.copy2(src_path, dst_path)
-                    return f"单个音频文件已复制为 wenan.mp3"
+                    return f"单个音频文件已复制为 wenan.wav"
                 else:
-                    import subprocess
-                    import json
+                    import wave
                     
-                    first_audio_path = os.path.join(target_dir, audio_files_sorted[0])
+                    file_list = [os.path.join(target_dir, f) for f in audio_files_sorted]
+                    output_path = os.path.join(target_dir, "wenan.wav")
                     
-                    probe_result = subprocess.run([
-                        'ffprobe', '-v', 'quiet', '-print_format', 'json',
-                        '-show_format', first_audio_path
-                    ], capture_output=True, text=True)
+                    with wave.open(file_list[0], 'rb') as first:
+                        nchannels = first.getnchannels()
+                        sampwidth = first.getsampwidth()
+                        framerate = first.getframerate()
+                        all_frames = first.readframes(first.getnframes())
                     
-                    probe_data = json.loads(probe_result.stdout)
-                    audio_format = probe_data.get('format', {})
+                    for file in file_list[1:]:
+                        with wave.open(file, 'rb') as f:
+                            if f.getnchannels() != nchannels or f.getsampwidth() != sampwidth or f.getframerate() != framerate:
+                                return f"音频参数不一致！参考文件: {file_list[0]}, 当前文件: {file}"
+                            all_frames += f.readframes(f.getnframes())
                     
-                    audio_bitrate = audio_format.get('bit_rate') or '192k'
-                    sample_rate = audio_format.get('sample_rate') or '44100'
+                    with wave.open(output_path, 'wb') as output:
+                        output.setnchannels(nchannels)
+                        output.setsampwidth(sampwidth)
+                        output.setframerate(framerate)
+                        output.writeframes(all_frames)
                     
-                    temp_list_file = os.path.join(target_dir, "concat_list.txt")
-                    with open(temp_list_file, 'w', encoding='utf-8') as f:
-                        for audio_file in audio_files_sorted:
-                            f.write(f"file '{audio_file}'\n")
-                    
-                    output_path = os.path.join(target_dir, "wenan.mp3")
-                    result = subprocess.run([
-                        'ffmpeg', '-y', '-f', 'concat', '-safe', '0',
-                        '-i', temp_list_file,
-                        '-b:a', str(audio_bitrate),
-                        '-ar', str(sample_rate),
-                        output_path
-                    ], capture_output=True, text=True)
-                    
-                    os.remove(temp_list_file)
-                    
-                    if result.returncode == 0:
-                        return f"音频拼接完成！已生成 wenan.mp3，共 {len(audio_files_sorted)} 个片段"
-                    else:
-                        return f"音频拼接失败: {result.stderr}"
+                    return f"音频拼接完成！已生成 wenan.wav，共 {len(audio_files_sorted)} 个片段"
                 
             except Exception as e:
                 return f"拼接失败: {str(e)}"
